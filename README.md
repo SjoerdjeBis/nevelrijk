@@ -21,14 +21,14 @@ Een point-and-click avontuur in de geest van de oude Kyrandia-games, gebouwd voo
 
 - **6 hoofdstukken, 10 locaties:** werkplaats, dorpsplein, Fluisterbos, Brokkelbrug, Paddenstoelenholte, Nevelmeer, het Eiland van Vergeten Dingen, voet van de toren, de Spiegeltrap en de lantaarnkamer.
 - **11 personages:** Mira, Kwast de kraai, Oma Brem, bakker Hanna, Brokkel de trol, kruidenvrouw Sabeth, Teun de veerman, Sluip de nevelvos, Wieke de mot, Isolde (een spiegelbeeld) en de Grijze Heer.
-- **7 puzzels**, elk in een makkelijke en een moeilijke versie: de zingende stenen (melodie), de raadsels van Brokkel, het drankje brouwen, glasblazen (timing), het glazen vogeltje (stukjes draaien), de Spiegeltrap (maanlicht kaatsen) en de sterrenringen.
+- **7 puzzels**, op één (pittig) niveau. Kom je er niet uit, druk dan vaker op de hint-knop: Kwast helpt steeds meer, tot hij het bijna voorzegt. De puzzels zijn: de zingende stenen (melodie), de raadsels van Brokkel, het drankje brouwen, glasblazen (timing), het glazen vogeltje (stukjes draaien), de Spiegeltrap (maanlicht kaatsen) en de sterrenringen.
 - **Voorwerpen** die je oppakt, gebruikt en combineert (haak + touw = werphaak).
 - **Keuzes met gevolgen** en **3 eindes**. Er zijn 6 stemmen te verdienen door aardig te zijn, en voor het beste einde heb je er 3 nodig. Wie onaardig was, kan het later nog goedmaken.
 - **Teksten voor kinderen vanaf 8:** korte zinnen en gewone woorden.
 - **Kleur keert terug:** de nevel trekt de kleur uit de wereld en die komt terug naarmate je verder komt.
 - **Geluid:** zachte, mysterieuze muziek per locatie (mineur, trage klanken, losse belletjes met echo), sfeergeluiden en effecten, allemaal live gesynthetiseerd. Het slaapliedje van Oma komt terug in de muziek en is ook de oplossing van twee puzzels.
 - **Gesproken tekst:** echte opnames van Azure (zie hieronder). Zolang die er niet zijn, of als een zin ontbreekt, spreekt de stem van je toestel.
-- **Profielen en opslag:** meerdere profielen, elk met een eigen moeilijkheid, eigen instellingen, automatisch opslaan en 3 handmatige opslagplekken.
+- **Profielen en opslag:** meerdere profielen, elk met eigen instellingen, automatisch opslaan en 3 handmatige opslagplekken.
 - **Toegankelijkheid:** ondertiteling altijd aan, tekstgrootte, een leesbaar lettertype, hoog contrast, minder beweging, namen altijd tonen, tekstsnelheid, automatisch doorgaan, bediening met het toetsenbord en meldingen voor schermlezers. De melodiepuzzel toont ook visueel de toonhoogte, dus je kunt hem zonder geluid oplossen.
 
 ## Stemmen maken met Azure

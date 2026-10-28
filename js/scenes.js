@@ -24,11 +24,9 @@
     brief: { name: 'Oma\'s brief', examine: (G) => readLetter(G) },
     sleutel: { name: 'Koperen sleuteltje', desc: 'Een klein koperen sleuteltje. Het is nog warm van de kattenmand. Het past vast op Oma\'s kist.' },
     muziekdoos: { name: 'Muziekdoosje', examine: async (G) => {
-      A.sfx('musicbox', A.LULLABY[G.easy ? 'easy' : 'hard']);
+      A.sfx('musicbox', A.LULLABY.hard);
       G.set('heardSong');
-      await M(G.easy
-        ? 'Oma\'s muziekdoosje speelt het slaapliedje. Op het deksel staan tekens: <b>❦ ≈ ✸ ≈</b>. Blad, Golf, Vuur, Golf.'
-        : 'Het slaapliedje. Op het deksel staan tekens: <b>❦ ≈ ✸ ≈</b> … De rest is weggesleten. Ik moet goed luisteren.');
+      await M('Het slaapliedje. Op het deksel staan tekens: <b>❦ ≈ ✸ ≈</b> … De rest is weggesleten. Ik moet goed luisteren.');
     } },
     blaaspijp: { name: 'Oma\'s blaaspijp', desc: 'Oma\'s oude blaaspijp. Hiermee blies ze al het glas in het dal.' },
     bol: { name: 'Lege glazen bol', desc: 'Een glazen bol met een kurk. Leeg, maar er zou iets lichts in passen.' },
@@ -133,9 +131,7 @@
 
   async function readLetter(G) {
     await say('oma', `<em>Lieve Mira,</em><br>Als je dit leest, is de Maanlantaarn uit. Dat heb ik gedaan. Schrik niet, en word niet boos. Ik heb iets ontdekt. Ik leg het je later uit.`);
-    await say('oma', G.easy
-      ? `Het sleuteltje van mijn kist ligt in de mand van Spinsel, onder het kussen. Neem mee wat erin ligt.`
-      : `Het sleuteltje van mijn kist ligt waar iemand met negen levens altijd droomt. Neem mee wat erin ligt.`);
+    await say('oma', `Het sleuteltje van mijn kist ligt waar iemand met negen levens altijd droomt. Neem mee wat erin ligt.`);
     await say('oma', `Volg het slaapliedje. Het begint bij de stenen in het Fluisterbos. En vertrouw Kwast, ook al is hij een opschepper.<br><em>Ik hou van je. Oma</em>`);
     G.task('sleutel', 'Vind het sleuteltje van Oma\'s kist.');
     G.task('stenen', 'Volg het slaapliedje naar de stenen in het Fluisterbos.');
@@ -854,7 +850,7 @@
     }
     const r = await G.choose([
       { text: 'Hoeveel tol moet ik betalen?', value: 'toll', seen: G.state.seen.askedToll },
-      { text: 'Ik daag je uit voor een raadselwedstrijd!', value: 'riddle', tag: G.easy ? 'makkelijk' : 'moeilijk' },
+      { text: 'Ik daag je uit voor een raadselwedstrijd!', value: 'riddle' },
       { text: 'Hier, Brokkel. Ik heb brood voor je meegenomen.', value: 'bread', if: G.has('brood') },
       { text: 'Ga opzij, steenklomp. Ik heb haast.', value: 'rude', if: !f('brokkelRude') },
       { text: 'Laat maar.', value: 'bye' },
@@ -1933,8 +1929,7 @@
     const stats = `<div class="stats">
       <div class="stat"><b>${v.length}/6</b>stemmen</div>
       <div class="stat"><b>${G.state.kindness}</b>vriendelijkheid</div>
-      <div class="stat"><b>${Math.round(G.state.playtime / 60)} min</b>speeltijd</div>
-      <div class="stat"><b>${G.easy ? 'Lantaarnlicht' : 'Maanloos'}</b>moeilijkheid</div></div>`;
+      <div class="stat"><b>${Math.round(G.state.playtime / 60)} min</b>speeltijd</div></div>`;
     const choices = G.state.choices.map((c) => `<li>${c.text}</li>`).join('');
     const choicesHtml = choices ? `<p><b>Jouw keuzes:</b></p><ul class="small">${choices}</ul>` : '';
     let title, text;

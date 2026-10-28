@@ -1,7 +1,7 @@
 /* ==========================================================
    Nevelrijk — puzzels
    Elke puzzel opent in een paneel en geeft een Promise<boolean>.
-   Makkelijk/moeilijk verandert lengte, aanwijzingen en regels.
+   Er is één niveau; elke druk op de hint-knop geeft meer hulp.
    ========================================================== */
 (function () {
   'use strict';
@@ -10,7 +10,7 @@
   const P = {};
   const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
-  // Basispaneel
+  // Basispaneel. hintFn(n) krijgt mee hoe vaak er al om hulp is gevraagd.
   function open(title, sub, hintFn) {
     const ov = $('#ov-puzzle');
     $('#pz-title').textContent = title; $('#pz-sub').innerHTML = sub || '';
@@ -23,7 +23,9 @@
     const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } };
     x.addEventListener('click', onClose); document.addEventListener('keydown', onKey);
     body.scrollTop = 0;
-    const onHint = () => { A.sfx('crow'); const t = hintFn(); $('#pz-sub').innerHTML = '🪶 <b>Kwast:</b> ' + t; A.speak('kwast', t); };
+    // Elke druk op de hint-knop geeft meer hulp: eerst een tip, daarna steeds meer hulpmiddelen.
+    let hintN = 0;
+    const onHint = () => { hintN++; A.sfx('crow'); const t = hintFn(hintN); $('#pz-sub').innerHTML = '🪶 <b>Kwast:</b> ' + t; A.speak('kwast', t); };
     close.addEventListener('click', onClose); hint.addEventListener('click', onHint);
     hint.style.display = hintFn ? '' : 'none';
     function finish(ok) {
@@ -37,25 +39,26 @@
 
   /* ---------- 1. De Zingende Stenen ---------- */
   P.stones = function (G) {
-    const target = A.LULLABY[G.easy ? 'easy' : 'hard'];
-    let hintN = 0;
-    const pz = open('De Zingende Stenen', G.easy
-      ? 'Speel het slaapliedje van Oma na. Tik op de stenen in de goede volgorde.'
-      : 'Vijf stenen, één lied. Ze zwijgen, tot iemand hun het oude slaapliedje teruggeeft.',
-    /* stem:kwast */ () => {
-      hintN++;
-      if (!G.has('muziekdoos') && !G.flag('boxGiven')) return 'Oma\'s muziekdoosje speelt dat liedje. Zat dat niet in haar kist?';
-      if (G.easy || hintN > 1) return 'Druk op Luister. De stenen lichten op in de volgorde van het lied. Doe ze daarna na!';
-      return 'Luister goed. Hoe hoger de toon, hoe verder naar rechts de steen staat.';
-    });
-    const showLid = G.has('muziekdoos');
-    const lid = showLid ? (G.easy ? target : target.slice(0, 4)) : [];
+    const target = A.LULLABY.hard;
+    let help = 0; // 2+: de stenen lichten op bij Luister. 3+: het hele liedje staat erbij.
+    const canListen = G.has('muziekdoos') || G.flag('boxGiven');
     const sym = (id) => A.STONES.find((s) => s.id === id).sym;
+    const pz = open('De Zingende Stenen', 'Vijf stenen, één lied. Ze zwijgen, tot iemand hun het oude slaapliedje teruggeeft.',
+    /* stem:kwast */ (n) => {
+      if (!canListen) return 'Oma\'s muziekdoosje speelt dat liedje. Zat dat niet in haar kist?';
+      help = n;
+      if (n === 1) return 'Luister goed. Hoe hoger de toon, hoe verder naar rechts de steen staat.';
+      if (n === 2) return 'Druk op Luister. De stenen lichten nu op in de volgorde van het lied. Doe ze daarna na!';
+      const lidEl = pz.body.querySelector('.notation');
+      const full = `<div class="notation" aria-label="Het hele slaapliedje">${target.map(sym).join(' ')}</div>`;
+      if (lidEl) lidEl.outerHTML = full; else pz.body.insertAdjacentHTML('afterbegin', full);
+      return 'Ik heb het hele liedje voor je opgeschreven. Tik de stenen in deze volgorde.';
+    });
     pz.body.innerHTML = `
-      ${showLid ? `<div class="notation" aria-label="Tekens op het deksel van het muziekdoosje">${lid.map(sym).join(' ')}${!G.easy ? ' <span class="muted small" style="align-self:center">…rest weggesleten</span>' : ''}</div>` : ''}
+      ${G.has('muziekdoos') ? `<div class="notation" aria-label="Tekens op het deksel van het muziekdoosje">${target.slice(0, 4).map(sym).join(' ')} <span class="muted small" style="align-self:center">…rest weggesleten</span></div>` : ''}
       <canvas class="pz-canvas" id="pz-wave" width="760" height="120" aria-hidden="true" style="height:60px"></canvas>
       <div class="stones" role="group" aria-label="Stenen">${A.STONES.map((s) => `<button class="stone-btn" data-id="${s.id}" style="--glow:${s.color};color:${s.color}" aria-label="Steen ${s.name}">${s.sym}<span>${s.name.toUpperCase()}</span></button>`).join('')}
-      <button class="btn" id="pz-listen" style="margin:0;border-radius:24px" ${G.has('muziekdoos') || G.flag('boxGiven') ? '' : 'disabled'}>🎵<br><small>${!G.has('muziekdoos') && G.flag('boxGiven') ? 'Neurie' : 'Luister'}</small></button></div>
+      <button class="btn" id="pz-listen" style="margin:0;border-radius:24px" ${canListen ? '' : 'disabled'}>🎵<br><small>${!G.has('muziekdoos') && G.flag('boxGiven') ? 'Neurie' : 'Luister'}</small></button></div>
       <div class="seq-dots" id="pz-dots">${target.map(() => '<i></i>').join('')}</div>`;
     const wave = pz.body.querySelector('#pz-wave'); const wctx = wave.getContext('2d');
     let bars = [];
@@ -78,7 +81,7 @@
       const ok = target.slice(0, input.length).every((x, i) => x === input[i]);
       if (!ok) {
         locked = true; setTimeout(() => { A.sfx('fail'); input = []; bars = []; drawWave(); dots(); locked = false; }, 420);
-        pz.setSub(G.easy ? 'Die klonk vals. Begin opnieuw — luister nog eens naar het doosje.' : 'De stenen zwijgen weer. Probeer opnieuw.');
+        pz.setSub('De stenen zwijgen weer. Probeer opnieuw.');
       } else if (input.length === target.length) {
         locked = true; dots();
         setTimeout(() => { A.sfx('magic'); pz.setSub('✨ De stenen zingen het lied mee!'); pz.body.querySelectorAll('.stone-btn').forEach((x) => x.classList.add('lit')); pz.finish(true); }, 300);
@@ -87,12 +90,11 @@
     }));
     pz.body.querySelector('#pz-listen').addEventListener('click', async () => {
       if (locked) return; locked = true; input = []; dots(); bars = [];
-      const playLen = G.easy ? target.length : target.length;
-      for (let i = 0; i < playLen; i++) {
+      for (let i = 0; i < target.length; i++) {
         const id = target[i];
         A.sfx('stone', id);
-        // makkelijk: de juiste steen licht op. moeilijk: alleen de toonhoogte-balk.
-        if (G.easy || hintN > 1) light(id, 420);
+        // eerst alleen de toonhoogte-balk; na een paar hints licht ook de juiste steen op
+        if (help >= 2) light(id, 420);
         bars.push(id); drawWave();
         await new Promise((r) => setTimeout(r, 600));
       }
@@ -104,14 +106,6 @@
 
   /* ---------- 2. Brokkels raadsels ---------- */
   const RIDDLES = {
-    easy: [
-      { q: 'Ik heb een hals maar geen hoofd, en ik draag een kurk in plaats van een hoed.', a: 'Een fles', o: ['Een giraf', 'Een kaars', 'Een sjaal'] },
-      { q: 'Hoe meer je van mij weghaalt, hoe groter ik word.', a: 'Een gat', o: ['Een berg', 'Een taart', 'Een schaduw'] },
-      { q: 'Ik vlieg zonder vleugels en ik huil zonder ogen.', a: 'Een wolk', o: ['Een vogel', 'Een ui', 'Een vlieger'] },
-      { q: 'Ik heb tanden, maar ik bijt nooit.', a: 'Een kam', o: ['Een haai', 'Een rots', 'Een trol'] },
-      { q: 'Ik word natter, hoe meer ik droog.', a: 'Een handdoek', o: ['Een spons', 'De zon', 'Een regenjas'] },
-      { q: 'Ik heb een gezicht en twee handen, maar geen armen en geen benen.', a: 'Een klok', o: ['Een pop', 'Een spiegel', 'Een maan'] },
-    ],
     hard: [
       { q: 'Noem mijn naam en je breekt me.', a: 'Stilte', o: ['Glas', 'Een belofte', 'Een geheim', 'IJs', 'Een spiegel'] },
       { q: 'Ik heb steden zonder huizen, bossen zonder bomen en meren zonder water.', a: 'Een landkaart', o: ['Een droom', 'Een schilderij', 'Een spiegel', 'De nacht', 'Een boek'] },
@@ -122,14 +116,18 @@
     ],
   };
   P.riddles = function (G) {
-    const set = shuffle(RIDDLES[G.easy ? 'easy' : 'hard']);
+    const set = shuffle(RIDDLES.hard);
     let idx = 0, right = 0; const need = 3;
-    const pz = open('Brokkels Raadsels', `Raad er ${need} goed, dan mag je over de brug.`, /* stem:kwast */ () => {
-      return G.easy ? 'Denk aan gewone dingen in huis. Wat heeft een hals, of tanden, of handen, maar is geen mens?' : 'Brokkel houdt van woordgrappen. Een woord kan ook iets heel anders betekenen.';
+    let wrongOpts = 5, forgiving = false; // hulp: minder foute antwoorden, daarna mag je opnieuw raden
+    const pz = open('Brokkels Raadsels', `Raad er ${need} goed, dan mag je over de brug.`, /* stem:kwast */ (n) => {
+      if (n === 1) return 'Brokkel houdt van woordgrappen. Een woord kan ook iets heel anders betekenen.';
+      if (n === 2) { wrongOpts = 2; show(); return 'Ik heb een paar foute antwoorden voor je weggestreept.'; }
+      forgiving = true;
+      return 'Nu mag je bij een fout antwoord gewoon nog eens raden. Brokkel merkt het niet. Denk rustig na!';
     });
     function show() {
       const r = set[idx % set.length];
-      const opts = shuffle([r.a].concat(r.o.slice(0, G.easy ? 3 : 5)));
+      const opts = shuffle([r.a].concat(r.o.slice(0, wrongOpts)));
       pz.body.innerHTML = `<div class="seq-dots">${Array.from({ length: need }, (_, i) => `<i class="${i < right ? 'on' : ''}"></i>`).join('')}</div>
         <p class="riddle">“${r.q}”</p>
         <div class="answers">${opts.map((o) => `<button class="btn" data-a="${o}">${o}</button>`).join('')}</div>`;
@@ -147,7 +145,7 @@
           const laugh = /* stem:brokkel */ ['HA! Fout! Nog eentje dan.', 'Hohoho! Dat is het niet.', 'Brokkel lacht stenen uit zijn neus. Fout!'];
           const t = laugh[Math.floor(Math.random() * laugh.length)];
           pz.setSub(t); A.speak('brokkel', t);
-          if (!G.easy) { idx++; setTimeout(show, 1100); }
+          if (!forgiving) { idx++; setTimeout(show, 1100); }
         }
       }));
     }
@@ -166,12 +164,13 @@
   ];
   P.brew = function (G) {
     const target = ['klokje', 'maanmos', 'cw', 'cw', 'cw', 'vuurbloem'];
-    const recipe = G.easy
-      ? `<b>Nevelzicht</b><ol><li>Eén blauw klokje</li><li>Een plukje maanmos</li><li>Roer 3× met de klok mee ⟳</li><li>Eén traan van de vuurbloem</li></ol>`
-      : `<b>Nevelzicht</b> <i>(in Sabeths kriebelhandschrift)</i><ol><li>Eerst iets dat eruitziet als een bel, maar nooit klinkt.</li><li>Dan iets dat slaapt in het maanlicht.</li><li>Roer zoals de schaduw van een zonnewijzer draait. Zo vaak als een klaver blaadjes heeft.</li><li>Als laatste iets dat brandt, maar nooit opbrandt.</li></ol>`;
-    const pz = open('Sabeths Ketel', 'Maak het drankje waarmee je door de nevel kunt kijken.', /* stem:kwast */ () =>
-      G.easy ? 'Volg het recept precies. Eerst het klokje, dan het maanmos. Dan drie keer met de klok mee roeren. En als laatste de vuurbloem.'
-        : 'Een klokje is een bloem die eruitziet als een belletje. De schaduw van een zonnewijzer draait met de klok mee. En een klaver heeft drie blaadjes.');
+    const recipe = `<b>Nevelzicht</b> <i>(in Sabeths kriebelhandschrift)</i><ol><li>Eerst iets dat eruitziet als een bel, maar nooit klinkt.</li><li>Dan iets dat slaapt in het maanlicht.</li><li>Roer zoals de schaduw van een zonnewijzer draait. Zo vaak als een klaver blaadjes heeft.</li><li>Als laatste iets dat brandt, maar nooit opbrandt.</li></ol>`;
+    const plain = `<b>Nevelzicht</b> <i>(door Kwast in gewone woorden)</i><ol><li>Eén blauw klokje</li><li>Een plukje maanmos</li><li>Roer 3× met de klok mee ⟳</li><li>Eén traan van de vuurbloem</li></ol>`;
+    const pz = open('Sabeths Ketel', 'Maak het drankje waarmee je door de nevel kunt kijken.', /* stem:kwast */ (n) => {
+      if (n === 1) return 'Een klokje is een bloem die eruitziet als een belletje. De schaduw van een zonnewijzer draait met de klok mee. En een klaver heeft drie blaadjes.';
+      pz.body.querySelector('.recipe').innerHTML = plain;
+      return 'Ik heb het recept voor je in gewone woorden opgeschreven. Eerst het klokje, dan het maanmos. Dan drie keer met de klok mee roeren. En als laatste de vuurbloem.';
+    });
     pz.body.innerHTML = `<div class="recipe">${recipe}</div>
       <div class="cauldron-wrap"><svg viewBox="0 0 300 170" style="width:100%;max-width:300px" aria-hidden="true">
         <ellipse cx="150" cy="160" rx="110" ry="10" fill="#000" opacity=".4"/>
@@ -208,18 +207,21 @@
 
   /* ---------- 4. Glasblazen in Oma's oven ---------- */
   P.glass = function (G) {
-    const pz = open('Het Maanglas blazen', 'Houd het glas in het vuur tot het oranje gloeit. Blaas dan. Maar niet te hard!', /* stem:kwast */ () =>
-      'Eerst warm maken. Houd de knop ingedrukt tot het witte streepje in het gouden vak staat. Laat dan los. Blaas daarna tot de bol tussen de twee ringen zit, en laat weer los!');
-    // Breedte van het goede vak. Moeilijk is krapper, maar nog haalbaar voor een kind (~0,45 s om los te laten).
-    const zone = G.easy ? 0.16 : 0.11;
+    const pz = open('Het Maanglas blazen', 'Houd het glas in het vuur tot het oranje gloeit. Blaas dan. Maar niet te hard!', /* stem:kwast */ (n) => {
+      if (n === 1) return 'Eerst warm maken. Houd de knop ingedrukt tot het witte streepje in het gouden vak staat. Laat dan los. Blaas daarna tot de bol tussen de twee ringen zit, en laat weer los!';
+      setZone(0.17);
+      return 'Ik maak de gouden vakken voor je wat groter. Probeer het rustig nog eens.';
+    });
+    // Breedte van het goede vak: krap (~0,45 s om los te laten), na een hint ruimer.
+    let heatTarget, sizeTarget;
+    function setZone(zone) { heatTarget = [0.62, 0.62 + zone + 0.06]; sizeTarget = [0.62, 0.62 + zone]; }
+    setZone(0.11);
     pz.body.innerHTML = `<canvas class="pz-canvas" id="gl-c" width="600" height="420" style="aspect-ratio:600/420"></canvas>
       <div class="brew-log" id="gl-log" aria-live="polite">Stap 1: verwarm het sterrenzand.</div>
       <button class="btn btn-primary" id="gl-btn" style="touch-action:none">🔥 Houd vast om te verwarmen</button>`;
     const c = pz.body.querySelector('#gl-c'), x = c.getContext('2d');
     const btn = pz.body.querySelector('#gl-btn'), log = pz.body.querySelector('#gl-log');
     let phase = 'heat', heat = 0, size = 0.15, holding = false, done = false, t = 0;
-    const heatTarget = [0.62, 0.62 + zone + 0.06];
-    const sizeTarget = [0.62, 0.62 + zone];
     const down = (e) => { e.preventDefault(); holding = true; if (phase === 'blow') A.sfx('whoosh'); };
     const up = (e) => {
       e.preventDefault(); if (!holding) return; holding = false;
@@ -277,24 +279,25 @@
   /* ---------- 5. De Sterrenringen van de Maanlantaarn ---------- */
   P.rings = function (G) {
     const SYMS = ['☾', '✦', '❦', '≈', '✸', '◯', '△', '✧'];
-    const n = G.easy ? 3 : 4;
+    const n = 4;
+    let coupled = true; // na een hint houdt Kwast de binnenste ringen vast
     // Doel: van buiten naar binnen het begin van het slaapliedje: Blad, Golf, Vuur (, Golf)
     const goal = ['❦', '≈', '✸', '≈'].slice(0, n).map((s) => SYMS.indexOf(s));
     let rot = Array.from({ length: n }, () => Math.floor(Math.random() * 8));
     const solved = () => rot.every((r, i) => ((8 - r) % 8) === goal[i]);
     while (solved()) rot = rot.map(() => Math.floor(Math.random() * 8));
-    const pz = open('De Sterrenringen', G.easy
-      ? 'Draai de ringen zodat bovenaan, van buiten naar binnen, het slaapliedje staat: ❦ ≈ ✸'
-      : 'Oma kraste in het hout: <i>“Laat de lantaarn het lied lezen, van buiten naar binnen.”</i> Let op: de ringen haken in elkaar.', /* stem:kwast */ () =>
-      G.easy ? 'Tik op een ring om hem een stapje te draaien. Zet bovenaan eerst het Blad op de buitenste ring. Dan de Golf. Dan het Vuur.'
-        : 'Het lied begint met Blad, Golf, Vuur, Golf. Als je een ring draait, draait de ring binnenin een stapje terug. Begin dus buiten en werk naar binnen.');
+    const pz = open('De Sterrenringen', 'Oma kraste in het hout: <i>“Laat de lantaarn het lied lezen, van buiten naar binnen.”</i> Let op: de ringen haken in elkaar.', /* stem:kwast */ (k) => {
+      if (k === 1) return 'Het lied begint met Blad, Golf, Vuur, Golf. Als je een ring draait, draait de ring binnenin een stapje terug. Begin dus buiten en werk naar binnen.';
+      coupled = false; const note = pz.body.querySelector('#ring-note'); if (note) note.textContent = 'Tik op een ring om hem te draaien. Kwast houdt de andere ringen vast.';
+      return 'Ik houd de binnenste ringen voor je vast. Nu draait elke ring los. Zet bovenaan, van buiten naar binnen: Blad, Golf, Vuur, Golf.';
+    });
     pz.body.innerHTML = `<svg viewBox="-200 -200 400 400" class="pz-canvas" id="rings" role="group" aria-label="Ringen">
       <circle r="196" fill="#151d34"/>
       ${Array.from({ length: n }, (_, i) => `<g class="ring" data-i="${i}" tabindex="0" role="button" aria-label="Ring ${i + 1}" style="cursor:pointer"></g>`).join('')}
       <circle r="${195 - n * 40}" fill="url(#g-glow)" opacity=".7"/>
       <path d="M0 -199 L-12 -186 L12 -186 Z" fill="#ffd36e"/>
     </svg>
-    <p class="muted small">Tik op een ring om hem te draaien. ${G.easy ? '' : 'De ringen zijn gekoppeld!'}</p>
+    <p class="muted small" id="ring-note">Tik op een ring om hem te draaien. De ringen zijn gekoppeld!</p>
     <div class="row"><button class="btn btn-small" id="ring-reset">↺ Opnieuw schudden</button></div>`;
     const svg = pz.body.querySelector('#rings');
     function draw() {
@@ -313,7 +316,7 @@
     }
     function turn(i) {
       rot[i] = (rot[i] + 1) % 8;
-      if (!G.easy && i + 1 < n) rot[i + 1] = (rot[i + 1] + 7) % 8;
+      if (coupled && i + 1 < n) rot[i + 1] = (rot[i + 1] + 7) % 8;
       A.sfx('click'); draw();
       if (solved()) { A.sfx('magic'); pz.setSub('✨ De ringen klikken vast. Het lied staat geschreven!'); svg.style.pointerEvents = 'none'; pz.finish(true); }
     }
@@ -348,40 +351,42 @@
     <path d="M0 290 Q150 260 300 290 L300 300 L0 300 Z" fill="#0a0e1c" opacity=".8"/>`;
   P.bird = function (G) {
     const n = 3, size = 300 / n;
-    // makkelijk: 4 vakjes staan scheef. moeilijk: alle vakjes, en soms op z'n kop.
-    let rot = Array.from({ length: n * n }, () => 0);
-    const twist = G.easy ? shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]).slice(0, 4) : [0, 1, 2, 3, 4, 5, 6, 7, 8];
-    twist.forEach((i) => { rot[i] = 1 + Math.floor(Math.random() * 3); });
-    const pz = open('Het glazen vogeltje', G.easy
-      ? 'Tik op een stukje om het te draaien. Maak het vogeltje weer heel.'
-      : 'Negen scherven. Draai ze tot het vogeltje weer klopt.',
-    /* stem:kwast */ () => G.easy ? 'Kijk naar het voorbeeld eronder. Draai elk stukje tot het lijkt op het plaatje.' : 'Begin bij de snavel, die is geel. Zoek dan het oog en de pootjes.');
+    // Alle vakjes staan scheef. Na een hint komt er een voorbeeld bij en een gouden randje om goede stukjes.
+    const rot = Array.from({ length: n * n }, () => 1 + Math.floor(Math.random() * 3));
+    let showOk = false;
+    const markOk = () => { if (showOk) pz.body.querySelectorAll('.tile').forEach((b) => b.classList.toggle('ok', rot[+b.dataset.i] % 4 === 0)); };
+    const pz = open('Het glazen vogeltje', 'Negen scherven. Draai ze tot het vogeltje weer klopt.',
+    /* stem:kwast */ (k) => {
+      if (k === 1) return 'Begin bij de snavel, die is geel. Zoek dan het oog en de pootjes.';
+      if (!showOk) {
+        showOk = true; markOk();
+        pz.body.insertAdjacentHTML('beforeend', `<p class="muted small" style="margin:.6em 0 .2em">Zo hoort het eruit te zien:</p><svg viewBox="0 0 300 300" class="tile-preview" aria-hidden="true">${BIRD}</svg>`);
+      }
+      return 'Kijk naar het voorbeeld eronder. Een gouden randje betekent dat een stukje goed staat.';
+    });
     pz.body.innerHTML = `<div class="tiles" id="bird-tiles" role="group" aria-label="Scherven">${rot.map((r, i) => {
       const x = (i % n) * size, y = Math.floor(i / n) * size;
       return `<button class="tile" data-i="${i}" aria-label="Scherf ${i + 1}"><svg viewBox="${x} ${y} ${size} ${size}" style="transform:rotate(${r * 90}deg)">${BIRD}</svg></button>`;
-    }).join('')}</div>
-    ${G.easy ? `<p class="muted small" style="margin:.6em 0 .2em">Zo hoort het eruit te zien:</p><svg viewBox="0 0 300 300" class="tile-preview" aria-hidden="true">${BIRD}</svg>` : ''}`;
+    }).join('')}</div>`;
     const solved = () => rot.every((r) => r % 4 === 0);
     pz.body.querySelectorAll('.tile').forEach((b) => b.addEventListener('click', () => {
       const i = +b.dataset.i; if (solved()) return;
       rot[i] += 1; A.sfx('glass');
       b.querySelector('svg').style.transform = `rotate(${rot[i] * 90}deg)`;
-      if (G.easy) b.classList.toggle('ok', rot[i] % 4 === 0);
+      markOk();
       if (solved()) { A.sfx('magic'); pz.setSub('✨ Het vogeltje is weer heel!'); pz.body.querySelector('#bird-tiles').classList.add('done'); pz.finish(true); }
     }));
-    if (G.easy) pz.body.querySelectorAll('.tile').forEach((b) => b.classList.toggle('ok', rot[+b.dataset.i] % 4 === 0));
     return pz.closed;
   };
 
   /* ---------- 7. De Spiegeltrap (maanlicht kaatsen) ---------- */
   // Rooster met spiegels. Het maanlicht komt links binnen; tik op een spiegel om hem te kantelen.
   // Het licht moet bovenaan door het luik (☾) naar buiten.
-  const LEVELS = {
-    easy: { n: 4, start: 2, goal: 3, mirrors: { '2,1': '/', '0,1': '/', '0,3': '/', '2,3': '\\' }, fixed: ['0,3'], pillars: [] },
-    hard: { n: 5, start: 4, goal: 3, mirrors: { '4,2': '/', '1,2': '\\', '1,0': '\\', '0,0': '/', '0,3': '/', '4,4': '\\', '2,4': '/', '3,0': '/' }, fixed: [], pillars: ['3,4', '2,0'] },
-  };
+  // path = de spiegels die echt meedoen (die krijgen na een hint een gouden randje)
+  const LEVEL = { n: 5, start: 4, goal: 3, mirrors: { '4,2': '/', '1,2': '\\', '1,0': '\\', '0,0': '/', '0,3': '/', '4,4': '\\', '2,4': '/', '3,0': '/' }, path: ['4,2', '1,2', '1,0', '0,0', '0,3'], fixed: [], pillars: ['3,4', '2,0'] };
   P.mirrors = function (G) {
-    const L = LEVELS[G.easy ? 'easy' : 'hard'];
+    const L = LEVEL;
+    let showPath = false;
     const n = L.n, C = 70, W = n * C;
     const flip = (m) => (m === '/' ? '\\' : '/');
     const state = {};
@@ -405,10 +410,12 @@
       return { pts, hit: false };
     }
     if (trace().hit) { const k = Object.keys(state).find((x) => !L.fixed.includes(x)); state[k] = flip(state[k]); }
-    const pz = open('De Spiegeltrap', G.easy
-      ? 'Tik op de spiegels om ze te kantelen. Stuur het maanlicht naar het luik ☾ bovenaan.'
-      : 'Het maanlicht moet het luik ☾ vinden. Niet elke spiegel hoort op het pad.',
-    /* stem:kwast */ () => G.easy ? 'Volg het licht met je vinger. Waar het de verkeerde kant op gaat, tik je op die spiegel.' : 'Werk van achteren naar voren: welke spiegel moet het licht in het luik gooien? En hoe komt het licht daar?');
+    const pz = open('De Spiegeltrap', 'Het maanlicht moet het luik ☾ vinden. Niet elke spiegel hoort op het pad.',
+    /* stem:kwast */ (k) => {
+      if (k === 1) return 'Werk van achteren naar voren: welke spiegel moet het licht in het luik gooien? En hoe komt het licht daar?';
+      showPath = true; draw();
+      return 'Ik heb de spiegels die meedoen een gouden randje gegeven. De andere kun je vergeten. Volg het licht met je vinger.';
+    });
     pz.body.innerHTML = `<svg viewBox="-40 -50 ${W + 80} ${W + 90}" class="pz-canvas mirror-grid" id="mg" role="group" aria-label="Spiegels"></svg>
       <p class="muted small">Tik op een spiegel om hem te kantelen.</p>`;
     const svg = pz.body.querySelector('#mg');
@@ -428,7 +435,7 @@
         const [r, c] = k.split(',').map(Number); const fixed = L.fixed.includes(k);
         const a = state[k] === '/' ? -45 : 45;
         s += `<g class="mirror${fixed ? ' fixed' : ''}" data-k="${k}" transform="translate(${(c + 0.5) * C} ${(r + 0.5) * C})" tabindex="${fixed ? -1 : 0}" role="button" aria-label="Spiegel">
-          <rect x="-34" y="-34" width="68" height="68" fill="transparent"/>
+          <rect x="-34" y="-34" width="68" height="68" fill="transparent"/>${showPath && L.path.includes(k) ? '<circle r="31" fill="none" stroke="#ffd36e" stroke-width="3" stroke-dasharray="6 5" opacity=".9"/>' : ''}
           <g style="transition:transform .25s;transform:rotate(${a}deg)"><rect x="-28" y="-5" width="56" height="10" rx="4" fill="url(#g-glass)" stroke="${fixed ? '#8a7a50' : '#e6f6ff'}" stroke-width="2.5"/></g>${fixed ? '<circle r="4" fill="#c9a54a"/>' : ''}</g>`;
       });
       svg.innerHTML = s;

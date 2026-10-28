@@ -48,7 +48,7 @@
       const sub = auto ? `${esc(auto.sceneName || '')} · ${fmtTime(auto.playtime)}` : 'Nog geen avontuur bezig';
       const ends = (p.endings || []).length ? ` · ${p.endings.length}/3 eindes` : '';
       return `<li class="profile-item"><span class="lantern-dot" style="color:${p.color}"></span>
-        <button class="main" data-id="${p.id}"><b>${esc(p.name)}</b><small>${sub}${ends} · ${p.difficulty === 'hard' ? 'Maanloos' : 'Lantaarnlicht'}</small></button>
+        <button class="main" data-id="${p.id}"><b>${esc(p.name)}</b><small>${sub}${ends}</small></button>
         <button class="icon-btn" data-del="${p.id}" aria-label="Verwijder profiel ${esc(p.name)}">🗑</button></li>`;
     }).join('');
   }
@@ -83,7 +83,6 @@
     const seg = (key, opts) => `<div class="seg" role="group">${opts.map(([v, l]) => `<button data-set="${key}" data-val="${v}" aria-pressed="${s[key] === v}">${l}</button>`).join('')}</div>`;
     const tog = (key) => `<span class="toggle"><input type="checkbox" data-tog="${key}" ${s[key] ? 'checked' : ''} aria-label="${key}"><span></span></span>`;
     const voices = A.voices.length ? `<select data-sel="voiceName" style="max-width:52%;padding:8px;border-radius:10px;background:#0d1426;color:var(--ink);border:1px solid var(--line)"><option value="">Automatisch</option>${A.voices.map((v) => `<option value="${esc(v.name)}" ${s.voiceName === v.name ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}</select>` : '<small>Geen Nederlandse stem gevonden op dit apparaat</small>';
-    const diff = G.state ? G.state.difficulty : p.difficulty;
     $('#settings-body').innerHTML = `
       <div class="setting"><label>Muziek</label><input type="range" min="0" max="1" step="0.05" value="${s.music}" data-range="music" aria-label="Volume muziek"></div>
       <div class="setting"><label>Geluidseffecten</label><input type="range" min="0" max="1" step="0.05" value="${s.sfx}" data-range="sfx" aria-label="Volume effecten"></div>
@@ -99,7 +98,6 @@
       <div class="setting"><label>Hoog contrast</label>${tog('highContrast')}</div>
       <div class="setting"><label>Minder beweging</label>${tog('reduceMotion')}</div>
       <div class="setting"><label>Kleur keert terug<small>De wereld wordt kleurrijker naarmate je verder komt</small></label>${tog('colorFx')}</div>
-      <div class="setting"><label>Moeilijkheid raadsels</label><div class="seg" role="group"><button data-diff="easy" aria-pressed="${diff === 'easy'}">Makkelijk</button><button data-diff="hard" aria-pressed="${diff === 'hard'}">Moeilijk</button></div></div>
       <p class="muted small">Instellingen horen bij profiel <b>${esc(p.name)}</b> en worden direct bewaard.</p>`;
   }
   function bindSettings() {
@@ -117,7 +115,6 @@
       const b = e.target.closest('button'); if (!b) return;
       A.init();
       if (b.dataset.set) { G.profile.settings[b.dataset.set] = b.dataset.val; save(); renderSettings(); A.sfx('tap'); }
-      if (b.dataset.diff) { G.profile.difficulty = b.dataset.diff; if (G.state) G.state.difficulty = b.dataset.diff; save(); renderSettings(); A.sfx('tap'); }
       if (b.id === 'test-voice') { const was = A.voiceOn; A.voiceOn = true; A.speak('mira', 'Hallo! Ik ben Mira, de kleindochter van Oma Brem.').then(() => { A.voiceOn = was; }); }
     });
   }
@@ -179,7 +176,7 @@
       e.preventDefault();
       const name = $('#np-name').value.trim() || 'Speler';
       const c = (document.querySelector('.swatch[aria-checked="true"]') || {}).dataset;
-      const diff = document.querySelector('input[name="np-diff"]:checked').value;
+      const diff = 'hard'; // één niveau
       const p = Store.create(name, c ? c.c : COLORS[0], diff);
       A.sfx('pickup');
       startGame(p, null);

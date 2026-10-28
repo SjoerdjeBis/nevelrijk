@@ -61,7 +61,6 @@
     Store, state: null, profile: null, scene: null, busy: false, selected: null,
     scenes: {}, items: {}, combos: [], hints: null, chapters: {},
     actor: { x: 500, y: 1300, face: 1, el: null, walking: false },
-    get easy() { return (G.state ? G.state.difficulty : 'easy') === 'easy'; },
   };
 
   /* ---------- helpers voor scripts ---------- */
@@ -579,13 +578,13 @@
       const who = G.flag('kwastJoined') ? 'kwast' : 'mira';
       const key = 'hintLevel_' + h.id;
       const lvl = G.state.seen[key] || 0;
-      // makkelijk: meteen duidelijk. moeilijk: eerst een raadselachtige hint, daarna duidelijk.
-      const clear = G.easy || lvl > 0;
+      // eerst een raadselachtige hint, bij nog eens vragen een duidelijke (met de weg erheen)
+      const clear = lvl > 0;
       const lines = clear ? [h.route, h.direct || h.vague] : [h.vague];
       G.state.seen[key] = lvl + 1;
       if (who === 'kwast') A.sfx('crow');
       for (const t of lines.filter(Boolean)) await G.say(who, t);
-      if (!G.easy && lvl === 0 && h.direct) await G.say(who, '<em>(Vraag nog eens als je een duidelijkere hint wilt.)</em>');
+      if (lvl === 0 && h.direct) await G.say(who, '<em>(Vraag nog eens als je een duidelijkere hint wilt.)</em>');
     } finally { G.busy = false; hideDialog(); }
   };
 
