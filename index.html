@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0d1426">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Nevelrijk — Het Lied van de Maanlantaarn</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Atkinson+Hyperlegible:wght@400;700&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<svg id="global-defs" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false"><defs id="global-defs-inner"></defs></svg>
+<div id="app" class="app">
+
+  <!-- ============ TITEL / PROFIELEN ============ -->
+  <section id="screen-title" class="screen active" aria-label="Titelscherm">
+    <div class="title-art" id="title-art" aria-hidden="true"></div>
+    <canvas class="fx" id="title-fx" aria-hidden="true"></canvas>
+    <div class="title-content">
+      <p class="title-kicker">Een avontuur in</p>
+      <h1 class="title-logo">Nevelrijk</h1>
+      <p class="title-sub">Het Lied van de Maanlantaarn</p>
+      <div class="title-buttons">
+        <button class="btn btn-primary" id="btn-start">Begin</button>
+      </div>
+      <p class="title-tip" style="margin-bottom:0">Met geluid en gesproken tekst — zet je volume aan 🎧</p>
+    </div>
+  </section>
+
+  <section id="screen-profiles" class="screen" aria-label="Kies een profiel">
+    <div class="panel-bg" aria-hidden="true"></div>
+    <div class="panel">
+      <h2>Wie speelt er?</h2>
+      <p class="muted">Elk profiel heeft een eigen avontuur, instellingen en opgeslagen spellen.</p>
+      <ul class="profile-list" id="profile-list"></ul>
+      <button class="btn btn-ghost" id="btn-new-profile">＋ Nieuw profiel</button>
+    </div>
+  </section>
+
+  <section id="screen-newprofile" class="screen" aria-label="Nieuw profiel">
+    <div class="panel-bg" aria-hidden="true"></div>
+    <form class="panel" id="form-new-profile" autocomplete="off">
+      <h2>Nieuw profiel</h2>
+      <label class="field">
+        <span>Naam van de speler</span>
+        <input id="np-name" maxlength="18" required placeholder="bijv. Sjoerd">
+      </label>
+      <fieldset class="field">
+        <legend>Kleur van je lantaarn</legend>
+        <div class="swatches" id="np-colors"></div>
+      </fieldset>
+      <fieldset class="field">
+        <legend>Moeilijkheid van de raadsels</legend>
+        <label class="radio-card"><input type="radio" name="np-diff" value="easy" checked>
+          <span><b>Lantaarnlicht</b> — makkelijk. Duidelijke aanwijzingen, kortere puzzels, Kwast helpt graag.</span></label>
+        <label class="radio-card"><input type="radio" name="np-diff" value="hard">
+          <span><b>Maanloos</b> — moeilijk. Cryptische raadsels, langere melodieën, gekoppelde ringen.</span></label>
+      </fieldset>
+      <div class="row">
+        <button type="button" class="btn btn-ghost" id="np-cancel">Terug</button>
+        <button type="submit" class="btn btn-primary">Maak profiel</button>
+      </div>
+    </form>
+  </section>
+
+  <section id="screen-slots" class="screen" aria-label="Kies een spel">
+    <div class="panel-bg" aria-hidden="true"></div>
+    <div class="panel">
+      <h2 id="slots-title">Avontuur</h2>
+      <ul class="slot-list" id="slot-list"></ul>
+      <div class="row">
+        <button class="btn btn-ghost" id="slots-back">Ander profiel</button>
+        <button class="btn btn-ghost" id="slots-settings">Instellingen</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SPEL ============ -->
+  <section id="screen-game" class="screen" aria-label="Spel">
+    <header class="hud-top">
+      <button class="hud-btn" id="hud-menu" aria-label="Menu">☰</button>
+      <div class="hud-title" id="hud-scene" aria-live="polite"></div>
+      <button class="hud-btn" id="hud-journal" aria-label="Dagboek">📖</button>
+      <button class="hud-btn" id="hud-reveal" aria-label="Toon alles waar je op kunt tikken">✦</button>
+      <button class="hud-btn" id="hud-hint" aria-label="Vraag Kwast om een hint">🪶</button>
+    </header>
+
+    <div class="stage-wrap" id="stage-wrap">
+      <div class="stage" id="stage">
+        <svg id="scene" viewBox="0 0 1000 1500" preserveAspectRatio="xMidYMid slice" role="application" aria-label="Spelwereld">
+                    <g id="layer-bg"></g>
+          <g id="layer-props"></g>
+          <g id="layer-actor"></g>
+          <g id="layer-fg" pointer-events="none"></g>
+          <g id="layer-hot"></g>
+        </svg>
+        <canvas class="fx" id="scene-fx" aria-hidden="true"></canvas>
+        <div class="hot-label" id="hot-label" aria-hidden="true"></div>
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        <div class="fade" id="fade"></div>
+
+        <div class="dialog" id="dialog" hidden>
+          <div class="dialog-portrait" id="dlg-portrait" aria-hidden="true"></div>
+          <div class="dialog-body">
+            <div class="dialog-name" id="dlg-name"></div>
+            <div class="dialog-text" id="dlg-text" aria-live="polite"></div>
+            <div class="dialog-choices" id="dlg-choices"></div>
+          </div>
+          <div class="dialog-next" id="dlg-next" aria-hidden="true">▸</div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="hud-bottom">
+      <div class="inv-info" id="inv-info" aria-live="polite">Tik op iets in de wereld om het te bekijken of te gebruiken.</div>
+      <div class="inventory" id="inventory" role="listbox" aria-label="Rugzak"></div>
+    </footer>
+  </section>
+
+  <!-- ============ OVERLAYS ============ -->
+  <div class="overlay" id="ov-menu" hidden role="dialog" aria-modal="true" aria-label="Menu">
+    <div class="sheet">
+      <h2>Gepauzeerd</h2>
+      <button class="btn btn-primary" data-act="resume">Verder spelen</button>
+      <button class="btn" data-act="save">Opslaan…</button>
+      <button class="btn" data-act="load">Laden…</button>
+      <button class="btn" data-act="settings">Instellingen</button>
+      <button class="btn btn-ghost" data-act="quit">Naar titelscherm</button>
+      <p class="muted small" id="menu-autosave"></p>
+    </div>
+  </div>
+
+  <div class="overlay" id="ov-saves" hidden role="dialog" aria-modal="true" aria-label="Opslaan of laden">
+    <div class="sheet">
+      <h2 id="saves-title">Opslaan</h2>
+      <ul class="slot-list" id="saves-list"></ul>
+      <button class="btn btn-ghost" data-close>Sluiten</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="ov-settings" hidden role="dialog" aria-modal="true" aria-label="Instellingen">
+    <div class="sheet sheet-scroll">
+      <h2>Instellingen</h2>
+      <div id="settings-body"></div>
+      <button class="btn btn-primary" data-close>Klaar</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="ov-journal" hidden role="dialog" aria-modal="true" aria-label="Dagboek">
+    <div class="sheet sheet-scroll journal">
+      <h2>Mira's dagboek</h2>
+      <div id="journal-body"></div>
+      <button class="btn btn-primary" data-close>Sluiten</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="ov-puzzle" hidden role="dialog" aria-modal="true" aria-label="Puzzel">
+    <div class="sheet puzzle-sheet">
+      <h2 id="pz-title"></h2>
+      <p class="muted" id="pz-sub"></p>
+      <div id="pz-body"></div>
+      <div class="row">
+        <button class="btn btn-ghost" id="pz-close">Stoppen</button>
+        <button class="btn btn-ghost" id="pz-hint">🪶 Hint</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay overlay-solid" id="ov-card" hidden aria-live="polite">
+    <div class="card-inner">
+      <p class="card-kicker" id="card-kicker"></p>
+      <h2 class="card-title" id="card-title"></h2>
+      <div class="card-text" id="card-text"></div>
+      <button class="btn btn-primary" id="card-btn">Verder</button>
+    </div>
+  </div>
+</div>
+
+<div class="sr-only" id="sr-live" aria-live="assertive"></div>
+
+<script src="js/voicekey.js"></script>
+<script src="audio/voice/manifest.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/art.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/puzzles.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

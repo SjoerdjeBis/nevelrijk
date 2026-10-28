@@ -1,0 +1,7 @@
+# Geheimen: de Azure-sleutel blijft op deze computer
+tools/.env
+# Proefopnames en tussenbestanden
+audio/voice-test/
+tools/stemmen-lijst.json
+.DS_Store
+.claude/

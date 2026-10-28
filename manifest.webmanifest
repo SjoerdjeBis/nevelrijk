@@ -1,0 +1,11 @@
+{
+  "name": "Nevelrijk — Het Lied van de Maanlantaarn",
+  "short_name": "Nevelrijk",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d1426",
+  "theme_color": "#0d1426",
+  "lang": "nl",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

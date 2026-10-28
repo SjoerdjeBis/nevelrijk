@@ -1,0 +1,19 @@
+{
+  "_uitleg": "Alternatieve stemmenset met de nieuwere MAI-stemmen van Azure. Gebruik: node tools/stemmen.mjs alles tools/stemmen.config.mai.json",
+  "pauseMs": 3200,
+  "cast": {
+    "mira":      { "voice": "nl-NL-Fleur:MAI-Voice-2",    "pitch": "+4%",  "rate": "+2%" },
+    "verteller": { "voice": "nl-NL-Harper:MAI-Voice-2.1", "pitch": "0%",   "rate": "-6%", "style": "audiobook" },
+    "kwast":     { "voice": "nl-NL-Sander:MAI-Voice-2",   "pitch": "+14%", "rate": "+8%", "style": "excited" },
+    "oma":       { "voice": "nl-NL-Harper:MAI-Voice-2.1", "pitch": "-10%", "rate": "-12%" },
+    "hanna":     { "voice": "nl-NL-Fleur:MAI-Voice-2",    "pitch": "-4%",  "rate": "0%" },
+    "brokkel":   { "voice": "nl-NL-Grant:MAI-Voice-2.1",  "pitch": "-24%", "rate": "-12%" },
+    "sabeth":    { "voice": "nl-NL-Harper:MAI-Voice-2.1", "pitch": "-6%",  "rate": "-6%" },
+    "teun":      { "voice": "nl-NL-Sander:MAI-Voice-2",   "pitch": "-10%", "rate": "-10%", "style": "nostalgic" },
+    "sluip":     { "voice": "nl-NL-Fleur:MAI-Voice-2",    "pitch": "+14%", "rate": "-4%" },
+    "grijs":     { "voice": "nl-NL-Grant:MAI-Voice-2.1",  "pitch": "-20%", "rate": "-18%" },
+    "stenen":    { "voice": "nl-NL-Fleur:MAI-Voice-2",    "pitch": "+20%", "rate": "-20%" },
+    "wieke":     { "voice": "nl-NL-Fleur:MAI-Voice-2",    "pitch": "+8%",  "rate": "-6%" },
+    "isolde":    { "voice": "nl-NL-Harper:MAI-Voice-2.1", "pitch": "+2%",  "rate": "-10%" }
+  }
+}
