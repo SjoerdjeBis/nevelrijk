@@ -247,8 +247,55 @@
       if (e.key === 'r' || e.key === 'R') G.reveal();
       if (e.key === 'j' || e.key === 'J') { renderJournal(); $('#ov-journal').hidden = false; }
     });
+    // Volledig scherm: knoppen op het titelscherm, in de balk bovenin en in het menu; toets F.
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('[data-fs]') || e.target.closest('[data-act="fullscreen"]')) { A.sfx('tap'); toggleFullscreen(); if (e.target.closest('#ov-menu')) closeOverlays(); }
+    });
+    document.addEventListener('keydown', (e) => {
+      if ((e.key === 'f' || e.key === 'F') && !e.target.closest('input, textarea')) toggleFullscreen();
+    });
+    ['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, updateFsButtons));
+    updateFsButtons();
     window.addEventListener('pagehide', () => G.autosave());
     document.addEventListener('visibilitychange', () => { if (document.hidden) G.autosave(); });
+  }
+
+  /* ---------- volledig scherm ---------- */
+  const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const fsSupported = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+  const isStandalone = () => window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone;
+  function toggleFullscreen() {
+    if (fsElement()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+    if (!fsSupported()) { fsHint(); return; }
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    Promise.resolve(req.call(el, { navigationUI: 'hide' })).then(() => {
+      // op telefoons het scherm rechtop houden, als dat mag
+      if (screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait').catch(() => {});
+    }).catch(fsHint);
+    // Sommige ingebouwde browsers weigeren zonder iets te melden: dan toch uitleg tonen.
+    setTimeout(() => { if (!fsElement()) fsHint(); }, 1500);
+  }
+  function fsHint() {
+    // iPhone (Safari) kent geen volledig scherm voor websites; via het beginscherm wel.
+    const ios = /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const msg = ios
+      ? 'Op een iPhone of iPad: tik onderin op Deel (het vierkantje met de pijl) en kies <b>Zet op beginscherm</b>. Open Nevelrijk daarna vanaf je beginscherm: dan speel je zonder balken.'
+      : 'Volledig scherm lukt hier niet. Probeer het spel in een gewone browser te openen, of zet het op je beginscherm.';
+    let box = document.querySelector('.fs-hint');
+    if (!box) { box = document.createElement('div'); box.className = 'fs-hint'; box.setAttribute('role', 'status'); document.body.appendChild(box); box.addEventListener('click', () => box.remove()); }
+    box.innerHTML = msg; clearTimeout(fsHint.t); fsHint.t = setTimeout(() => box.remove(), 9000);
+  }
+  function updateFsButtons() {
+    const on = !!fsElement();
+    document.querySelectorAll('[data-fs]').forEach((b) => {
+      b.hidden = isStandalone() && !on; // al zonder balken geopend vanaf het beginscherm
+      b.textContent = on ? '🗗' : '⛶';
+      b.setAttribute('aria-label', on ? 'Volledig scherm uit' : 'Volledig scherm');
+      b.title = on ? 'Volledig scherm uit (F)' : 'Volledig scherm (F)';
+    });
+    document.querySelectorAll('[data-fs-label]').forEach((b) => { b.textContent = on ? 'Volledig scherm uit' : 'Volledig scherm'; });
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 150);
   }
 
   /* ---------- start ---------- */

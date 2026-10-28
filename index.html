@@ -21,6 +21,7 @@
 
   <!-- ============ TITEL / PROFIELEN ============ -->
   <section id="screen-title" class="screen active" aria-label="Titelscherm">
+    <button class="hud-btn fs-btn title-fs" data-fs aria-label="Volledig scherm" title="Volledig scherm (F)">⛶</button>
     <div class="title-art" id="title-art" aria-hidden="true"></div>
     <canvas class="fx" id="title-fx" aria-hidden="true"></canvas>
     <div class="title-content">
@@ -90,6 +91,7 @@
       <button class="hud-btn" id="hud-journal" aria-label="Dagboek">📖</button>
       <button class="hud-btn" id="hud-reveal" aria-label="Toon alles waar je op kunt tikken">✦</button>
       <button class="hud-btn" id="hud-hint" aria-label="Vraag Kwast om een hint">🪶</button>
+      <button class="hud-btn fs-btn" data-fs aria-label="Volledig scherm" title="Volledig scherm (F)">⛶</button>
     </header>
 
     <div class="stage-wrap" id="stage-wrap">
@@ -132,6 +134,7 @@
       <button class="btn" data-act="save">Opslaan…</button>
       <button class="btn" data-act="load">Laden…</button>
       <button class="btn" data-act="settings">Instellingen</button>
+      <button class="btn" data-act="fullscreen" data-fs-label>Volledig scherm</button>
       <button class="btn btn-ghost" data-act="quit">Naar titelscherm</button>
       <p class="muted small" id="menu-autosave"></p>
     </div>

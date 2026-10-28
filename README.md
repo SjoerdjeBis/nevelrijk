@@ -13,7 +13,8 @@ Een point-and-click avontuur in de geest van de oude Kyrandia-games, gebouwd voo
 - Tik op de grond om te lopen, en op dingen of personen om ze te bekijken, te pakken of mee te praten.
 - Tik op een voorwerp in je rugzak om het te kiezen en tik dan op iets in de wereld om het te gebruiken. Kies twee voorwerpen achter elkaar om ze te combineren. Tik twee keer op hetzelfde voorwerp om het te bekijken.
 - ✦ laat zien waar je op kunt tikken. 🪶 vraagt Kwast de kraai om een hint. 📖 opent het dagboek met taken, verzamelde stemmen en je keuzes.
-- Op desktop: `H` geeft een hint, `R` toont tikbare plekken, `J` opent het dagboek en `Esc` het menu.
+- Op desktop: `H` geeft een hint, `R` toont tikbare plekken, `J` opent het dagboek, `F` zet volledig scherm aan of uit en `Esc` opent het menu.
+- **Volledig scherm:** tik op ⛶ rechtsboven (of kies het in het menu). Op een iPhone kan dat niet in Safari; zet het spel dan op je beginscherm (Deel → Zet op beginscherm), dan opent het zonder balken.
 
 ## Wat erin zit
 

@@ -75,6 +75,11 @@ input { font: inherit; user-select: text; -webkit-user-select: text; }
 }
 .title-sub { font-family: var(--font-title); margin: 0 0 26px; font-size: 1.15em; color: var(--moon); }
 .title-tip { font-size: .85em; opacity: .7; margin-top: 14px; }
+/* volledig scherm */
+.hud-btn.title-fs { position: absolute; top: calc(10px + var(--safe-t)); right: max(10px, env(safe-area-inset-right, 0px)); z-index: 6; color: #e8ecf6; }
+.fs-btn { font-size: 22px; color: #e8ecf6; }
+.fs-hint { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); max-width: min(92vw, 420px); padding: 12px 16px; border-radius: 14px; background: #1a2240f2; border: 1px solid var(--line); color: #e8ecf6; font-size: .95em; line-height: 1.4; z-index: 50; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+@media (max-width: 380px) { .hud-top .fs-btn { display: none; } }
 .title-content .btn-primary { font-size: 1.15em; min-height: 58px; animation: breathe 3.2s ease-in-out infinite; }
 @keyframes breathe { 50% { box-shadow: 0 6px 40px rgba(255, 170, 80, .6), inset 0 1px 0 rgba(255,255,255,.6); } }
 
