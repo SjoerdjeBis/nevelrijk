@@ -37,10 +37,24 @@
   /* ================= spelstaat ================= */
   function newState(profile) {
     return {
-      v: 1, scene: 'werkplaats', entry: 'start', pos: null, face: 1,
+      v: 2, scene: 'werkplaats', entry: 'start', pos: null, face: 1,
       inv: [], flags: {}, kindness: 0, voices: [], journal: [], choices: [],
       chapter: 0, playtime: 0, created: Date.now(), difficulty: profile.difficulty, seen: {},
     };
+  }
+
+  // Opslag van een oudere versie van het spel bruikbaar houden.
+  // Nieuwe onderdelen beginnen gewoon 'nog niet gedaan'; alleen wat echt niet meer bestaat wordt rechtgezet.
+  function migrate(s) {
+    s.flags = s.flags || {}; s.seen = s.seen || {}; s.inv = s.inv || []; s.voices = s.voices || [];
+    s.journal = s.journal || []; s.choices = s.choices || [];
+    if (!G.scenes[s.scene]) { s.scene = 'werkplaats'; s.pos = null; } // plek bestaat niet meer
+    s.inv = s.inv.filter((id) => G.items[id]); // voorwerpen die niet meer bestaan
+    if ((s.v || 1) < 2) {
+      // Versie 1 had 4 hoofdstukken; de toren was toen hoofdstuk 4 (nu 5).
+      if (s.flags.reachedTower && s.chapter === 4) s.chapter = 5;
+      s.v = 2;
+    }
   }
 
   const G = {
@@ -153,6 +167,7 @@
     G.profile = profile; Store.data.last = profile.id; Store.save();
     G.state = save ? JSON.parse(JSON.stringify(save)) : newState(profile);
     G.state.difficulty = G.state.difficulty || profile.difficulty;
+    if (save) migrate(G.state);
     G.selected = null; G.busy = false;
     G.applySettings();
     G.showScreen('game');
@@ -564,10 +579,12 @@
       const who = G.flag('kwastJoined') ? 'kwast' : 'mira';
       const key = 'hintLevel_' + h.id;
       const lvl = G.state.seen[key] || 0;
-      const text = G.easy ? (h.direct || h.vague) : (lvl === 0 ? h.vague : (h.direct || h.vague));
+      // makkelijk: meteen duidelijk. moeilijk: eerst een raadselachtige hint, daarna duidelijk.
+      const clear = G.easy || lvl > 0;
+      const lines = clear ? [h.route, h.direct || h.vague] : [h.vague];
       G.state.seen[key] = lvl + 1;
       if (who === 'kwast') A.sfx('crow');
-      await G.say(who, text);
+      for (const t of lines.filter(Boolean)) await G.say(who, t);
       if (!G.easy && lvl === 0 && h.direct) await G.say(who, '<em>(Vraag nog eens als je een duidelijkere hint wilt.)</em>');
     } finally { G.busy = false; hideDialog(); }
   };

@@ -141,58 +141,87 @@
     G.task('stenen', 'Volg het slaapliedje naar de stenen in het Fluisterbos.');
   }
 
-  G.hints = function (G) {
+  // Hoe kom je ergens? Kwast zegt het erbij als je niet op de goede plek staat.
+  const ROUTE = /* stem:kwast */ {
+    werkplaats: 'Dat is thuis, in Oma\'s werkplaats. Die ligt links van het dorpsplein.',
+    dorp: 'Dat is op het dorpsplein, midden in het dorp.',
+    bos: 'Dat is in het Fluisterbos. Vanaf het dorpsplein ga je omhoog.',
+    brug: 'Dat is bij de brug van Brokkel. Vanaf het dorpsplein ga je naar rechts.',
+    holte: 'Dat is in de Paddenstoelenholte, aan de overkant van de brug.',
+    veer: 'Dat is bij het Nevelmeer. Vanaf de Paddenstoelenholte ga je naar beneden.',
+    eiland: 'Dat is op het Eiland van Vergeten Dingen. Daar brengt Teun je met zijn boot.',
+    toren: 'Dat is bij de Maantoren. Teun vaart je erheen als je de zeekaart hebt.',
+    trap: 'Dat is binnen in de toren, op de Spiegeltrap.',
+    torenkamer: 'Dat is helemaal boven in de toren, in de lantaarnkamer.',
+  };
+
+  // Alle doelen die er nu toe doen. Kwast kiest het doel dat het best past bij waar je bent.
+  // at: plek(ken) waar je het doet ('*' = overal, bijv. in je rugzak); opt: niet nodig om het spel uit te spelen.
+  function hintGoals(G) {
     const f = (k) => G.flag(k), h = (i) => G.has(i);
-    const sc = G.state.scene;
-    if (!f('letterRead')) return { id: 'brief', vague: 'Oma laat nooit zomaar iets slingeren. Kijk eens op haar werkbank.', direct: 'Tik op de brief op Oma\'s werkbank.' };
-    if (!f('chestOpen') && !h('sleutel')) return { id: 'key', vague: 'Wie heeft er negen levens en droomt de hele dag? Kijk bij de oven.', direct: 'Het sleuteltje ligt in de kattenmand van Spinsel, bij de oven.' };
-    if (!f('chestOpen')) return { id: 'chest', vague: 'Sleutel. Kist. Ik zeg niks meer.', direct: 'Kies het sleuteltje in je rugzak en tik dan op de kist.' };
-    if (!h('bol') && !f('gotLamp')) return { id: 'bol', vague: 'In Oma\'s werkplaats liggen meer nuttige dingen. Iets van glas, misschien?', direct: 'Pak de lege glazen bol van de plank.' };
-    if (!f('kwastJoined')) return { id: 'kwast', vague: 'Buiten, op de wegwijzer, zit een heel knap en slim iemand.', direct: 'Ga naar het dorpsplein en praat met de kraai op de wegwijzer.' };
-    if (!f('stonesDone')) {
-      if (!f('heardSong')) return { id: 'song', vague: 'Het slaapliedje… heeft Oma dat niet ergens in een doosje bewaard?', direct: 'Bekijk het muziekdoosje in je rugzak (tik er twee keer op), en ga dan naar de stenen in het Fluisterbos.' };
-      return { id: 'stones', vague: 'De stenen in het bos willen het lied horen.', direct: 'Ga naar het Fluisterbos (vanaf het plein omhoog) en tik op de stenen. Druk op “Luister” en speel het na.' };
-    }
-    if (!f('gotLamp')) return { id: 'lamp', vague: 'Het wordt donker waar we heen gaan. In het bos dansen kleine lampjes rond.', direct: 'Kies de lege glazen bol en tik op de vuurvliegjes bij de oude boomstronk in het bos.' };
-    if (!f('bridgePassed')) {
-      if (!h('brood') && !f('brokkelFed')) return { id: 'bridge', vague: 'Trollen kun je blij maken. Met raadsels. Of met eten. Vooral met eten.', direct: 'Daag Brokkel uit voor raadsels, óf haal een brood bij bakker Hanna op het plein en geef het hem.' };
-      return { id: 'bridge2', vague: 'Brokkel ziet eruit alsof hij in geen jaren iets lekkers heeft gehad.', direct: 'Kies het brood en tik op Brokkel. Of daag hem uit voor raadsels.' };
-    }
-    if (!f('sabethMet')) return { id: 'sabeth', vague: 'Achter de brug woont iemand die alles van de nevel weet.', direct: 'Ga over de brug naar de Paddenstoelenholte en praat met Sabeth.' };
-    if (!f('medaillonBack')) {
-      if (!h('medaillon')) {
-        if (!h('werphaak')) {
-          if (!h('touw')) return { id: 'touw', vague: 'Om iets uit een put te vissen heb je iets langs nodig. Teun de veerman heeft veel touw.', direct: 'Pak het touw bij de steiger van Teun (via de holte naar beneden). Maak het vast aan de haak uit de werkplaats.' };
-          if (!h('haak')) return { id: 'haak', vague: 'Touw alleen is niet genoeg. Er moet iets kroms aan.', direct: 'Pak de ijzeren pothaak bij de oven in de werkplaats en combineer hem met het touw.' };
-          return { id: 'combo', vague: 'Haak. Touw. Je hebt twee handen.', direct: 'Tik op de haak in je rugzak en daarna op het touw. Dan maak je ze aan elkaar vast.' };
-        }
-        return { id: 'well', vague: 'Sabeth is iets kwijt. Iets wat glimt. Ik zag het vallen, in een diep gat op het plein…', direct: 'Kies de werphaak en tik op de put op het dorpsplein.' };
-      }
-      return { id: 'giveback', vague: 'Dat medaillon is niet van jou.', direct: 'Breng het medaillon terug naar Sabeth in de holte.' };
-    }
-    if (!h('nevelzicht') && !f('teunCanSee')) return { id: 'brew', vague: 'Sabeth zei dat je haar ketel mag gebruiken.', direct: 'Tik op de ketel bij Sabeths huis en volg het recept voor Nevelzicht.' };
-    if (!f('teunCanSee')) return { id: 'teun', vague: 'Teun ziet de weg niet door de nevel. Jij hebt iets waarmee je door nevel kijkt.', direct: 'Kies het drankje Nevelzicht en tik op Teun bij de steiger.' };
-    if (!f('ferryPaid')) return { id: 'pay', vague: 'Teun wil betaald worden. Niet met geld.', direct: 'Praat met Teun en kies hoe je hem betaalt.' };
-    if (f('sabethTruth') && !h('maanglas') && !f('maanglasPlaced')) {
-      if (!h('sterrenzand')) return { id: 'zand', vague: 'Sabeth had het over nieuw glas. Glas begint met zand. Mooi zand.', direct: 'Pak het glinsterende sterrenzand aan de oever bij de steiger.' };
-      if (!h('vuurbloem') && !f('ovenLit')) return { id: 'bloem', vague: 'Oma\'s oven is koud. Wat brandt er zonder op te branden?', direct: 'Pluk een vuurbloem in Sabeths tuin en gebruik hem op de oven in de werkplaats.' };
-      if (!f('ovenLit')) return { id: 'oven', vague: 'De oven wacht op vuur.', direct: 'Gebruik de vuurbloem op Oma\'s oven in de werkplaats.' };
-      return { id: 'blow', vague: 'Oven heet, zand in je zak, pijp in je hand. Wat doet een glasblazer?', direct: 'Gebruik het sterrenzand op de hete oven om Maanglas te blazen.' };
-    }
-    if (!f('islandVisited')) return { id: 'cross', vague: 'Teun wacht bij zijn boot. Tijd om te varen!', direct: 'Tik op Teuns boot bij de steiger.' };
-    if (!h('zeekaart') && !f('reachedTower')) {
-      if (sc !== 'eiland') return { id: 'island', vague: 'Een kaart van de rotsen? Die vind je vast op het eiland.', direct: 'Vaar met Teun naar het Eiland van Vergeten Dingen.' };
-      if (!f('wiekeMet')) return { id: 'wieke', vague: 'Die mot met de bril weet vast meer.', direct: 'Praat met Wieke de mot.' };
-      return { id: 'bird', vague: 'Een glasblazer kan scherven weer heel maken.', direct: 'Tik op de kist met scherven. Draai alle stukjes tot het vogeltje klopt.' };
-    }
-    if (!f('reachedTower')) return { id: 'cross2', vague: 'Met de kaart vindt Teun de weg wel.', direct: 'Stap in de boot en kies: naar de Maantoren.' };
-    if (!f('towerOpen')) return { id: 'door', vague: 'Die deur heeft geen klink. Maar er staat wel iets op. Iets wat zoemt.', direct: 'Gebruik de zilveren stemvork op de torendeur.' };
-    if (!f('hatchOpen')) return { id: 'hatch', vague: 'Maanlicht en spiegels. Stuur het licht naar het luik.', direct: 'Ga de toren in en tik op de spiegels. Kantel ze tot het licht bij het luik ☾ komt.' };
-    if (!f('ringsDone')) return { id: 'rings', vague: 'De lantaarn werkt met de ringen op de sokkel.', direct: 'Tik op de sterrenringen en zet het slaapliedje erop: ❦ ≈ ✸ (≈).' };
+    const g = [];
+    const add = (when, goal) => { if (when) g.push(goal); };
+    const glassNeeded = f('sabethTruth') && !h('maanglas') && !f('maanglasPlaced');
+    add(!f('letterRead'), { id: 'brief', at: ['werkplaats'], vague: 'Oma laat nooit zomaar iets slingeren. Kijk eens op haar werkbank.', direct: 'Tik op de brief op Oma\'s werkbank.' });
+    add(f('letterRead') && !f('chestOpen') && !h('sleutel'), { id: 'key', at: ['werkplaats'], vague: 'Wie heeft er negen levens en droomt de hele dag? Kijk bij de oven.', direct: 'Het sleuteltje ligt in de kattenmand van Spinsel, bij de oven.' });
+    add(h('sleutel') && !f('chestOpen'), { id: 'chest', at: ['werkplaats'], vague: 'Sleutel. Kist. Ik zeg niks meer.', direct: 'Kies het sleuteltje in je rugzak en tik dan op de kist.' });
+    add(f('letterRead') && !h('bol') && !f('gotLamp'), { id: 'bol', at: ['werkplaats'], vague: 'In Oma\'s werkplaats liggen meer nuttige dingen. Iets van glas, misschien?', direct: 'Pak de lege glazen bol van de plank.' });
+    add(f('letterRead') && !f('kwastJoined'), { id: 'kwast', at: ['dorp'], vague: 'Buiten, op de wegwijzer, zit een heel knap en slim iemand.', direct: 'Praat met de kraai op de wegwijzer.' });
+    add(h('muziekdoos') && !f('heardSong') && !f('stonesDone'), { id: 'song', at: ['*'], vague: 'Het slaapliedje… heeft Oma dat niet ergens in een doosje bewaard?', direct: 'Tik twee keer op het muziekdoosje in je rugzak. Dan hoor je het liedje.' });
+    add(!f('stonesDone') && (f('heardSong') || f('boxGiven')), { id: 'stones', at: ['bos'], vague: 'De stenen in het bos willen het lied horen.', direct: 'Tik op de stenen. Druk op Luister en speel het liedje na.' });
+    add(f('stonesDone') && !h('stemvork') && !f('forkTaken'), { id: 'fork', at: ['bos'], vague: 'Boven de middelste steen zweeft nog iets zilverigs.', direct: 'Pak de zilveren stemvork boven de middelste steen.' });
+    add(h('bol') && !f('gotLamp'), { id: 'lamp', at: ['bos'], vague: 'Het wordt donker waar we heen gaan. In het bos dansen kleine lampjes rond.', direct: 'Kies de lege glazen bol en tik op de vuurvliegjes bij de oude boomstronk.' });
+    add(f('kwastJoined') && !f('bridgePassed') && !h('brood') && !f('brokkelFed'), { id: 'bridge', at: ['brug', 'dorp'], vague: 'Trollen kun je blij maken. Met raadsels. Of met eten. Vooral met eten.', direct: 'Daag Brokkel uit voor raadsels. Of haal een brood bij bakker Hanna op het plein.' });
+    add(!f('bridgePassed') && h('brood'), { id: 'bridge2', at: ['brug'], vague: 'Brokkel ziet eruit alsof hij in geen jaren iets lekkers heeft gehad.', direct: 'Kies het brood en tik op Brokkel.' });
+    add(f('bridgePassed') && !f('sabethMet'), { id: 'sabeth', at: ['holte'], vague: 'Achter de brug woont iemand die alles van de nevel weet.', direct: 'Praat met Sabeth bij haar paddenstoelhuis.' });
+    const needMed = f('sabethMet') && !f('medaillonBack');
+    add(needMed && !h('medaillon') && !h('werphaak') && !h('touw'), { id: 'touw', at: ['veer'], vague: 'Om iets uit een put te vissen heb je iets langs nodig. Teun de veerman heeft veel touw.', direct: 'Pak het touw op de meerpaal bij de steiger.' });
+    add(needMed && !h('medaillon') && !h('werphaak') && !h('haak'), { id: 'haak', at: ['werkplaats'], vague: 'Touw alleen is niet genoeg. Er moet iets kroms aan.', direct: 'Pak de ijzeren haak bij de oven.' });
+    add(needMed && h('haak') && h('touw'), { id: 'combo', at: ['*'], vague: 'Haak. Touw. Je hebt twee handen.', direct: 'Tik op de haak in je rugzak en daarna op het touw. Dan maak je ze aan elkaar vast.' });
+    add(needMed && h('werphaak') && !h('medaillon'), { id: 'well', at: ['dorp'], vague: 'Sabeth is iets kwijt. Iets wat glimt. Ik zag het vallen, in een diep gat op het plein…', direct: 'Kies de werphaak en tik op de put.' });
+    add(h('medaillon'), { id: 'giveback', at: ['holte'], vague: 'Dat medaillon is niet van jou.', direct: 'Kies het medaillon en tik op Sabeth.' });
+    add(f('brewAllowed') && !h('nevelzicht') && !f('teunCanSee'), { id: 'brew', at: ['holte'], vague: 'Sabeth zei dat je haar ketel mag gebruiken.', direct: 'Tik op de ketel en volg het recept voor Nevelzicht.' });
+    add(h('nevelzicht') && !f('teunCanSee'), { id: 'teun', at: ['veer'], vague: 'Teun ziet de weg niet door de nevel. Jij hebt iets waarmee je door nevel kijkt.', direct: 'Kies het drankje Nevelzicht en tik op Teun.' });
+    add(f('teunCanSee') && !f('ferryPaid'), { id: 'pay', at: ['veer'], vague: 'Teun wil betaald worden. Niet met geld.', direct: 'Praat met Teun en kies hoe je hem betaalt.' });
+    add(glassNeeded && !h('sterrenzand'), { id: 'zand', at: ['veer'], vague: 'Sabeth had het over nieuw glas. Glas begint met zand. Mooi zand.', direct: 'Pak het glinsterende sterrenzand aan de oever bij de steiger.' });
+    add(glassNeeded && !h('vuurbloem') && !f('ovenLit'), { id: 'bloem', at: ['holte'], vague: 'Oma\'s oven is koud. Wat brandt er zonder op te branden?', direct: 'Pluk een vuurbloem in Sabeths tuin.' });
+    add(glassNeeded && h('vuurbloem') && !f('ovenLit'), { id: 'oven', at: ['werkplaats'], vague: 'De oven wacht op vuur.', direct: 'Kies de vuurbloem en tik op Oma\'s oven.' });
+    add(glassNeeded && f('ovenLit') && h('sterrenzand'), { id: 'blow', at: ['werkplaats'], vague: 'Oven heet, zand in je zak, pijp in je hand. Wat doet een glasblazer?', direct: 'Kies het sterrenzand en tik op de hete oven.' });
+    add(f('ferryPaid') && !f('islandVisited'), { id: 'cross', at: ['veer'], vague: 'Teun wacht bij zijn boot. Tijd om te varen!', direct: 'Tik op Teuns boot bij de steiger.' });
+    add(f('islandVisited') && !h('zeekaart') && !f('reachedTower') && !f('wiekeMet'), { id: 'wieke', at: ['eiland'], vague: 'Die mot met de bril weet vast meer.', direct: 'Praat met Wieke de mot.' });
+    add(f('wiekeMet') && !f('birdDone'), { id: 'bird', at: ['eiland'], vague: 'Een glasblazer kan scherven weer heel maken.', direct: 'Tik op de kist met scherven. Draai alle stukjes tot het vogeltje klopt.' });
+    add(h('zeekaart') && !f('reachedTower'), { id: 'cross2', at: ['veer', 'eiland'], vague: 'Met de kaart vindt Teun de weg wel.', direct: 'Stap in de boot en kies: naar de Maantoren.' });
+    add(f('reachedTower') && !f('towerOpen'), { id: 'door', at: ['toren'], vague: 'Die deur heeft geen klink. Maar er staat wel iets op. Iets wat zoemt.', direct: 'Gebruik de zilveren stemvork op de torendeur.' });
+    add(f('towerOpen') && !f('hatchOpen'), { id: 'hatch', at: ['trap'], vague: 'Maanlicht en spiegels. Stuur het licht naar het luik.', direct: 'Tik op de spiegels. Kantel ze tot het licht bij het luik ☾ komt.' });
+    add(f('hatchOpen') && !f('ringsDone'), { id: 'rings', at: ['torenkamer'], vague: 'De lantaarn werkt met de ringen op de sokkel.', direct: 'Tik op de sterrenringen en zet het slaapliedje erop: ❦ ≈ ✸ (≈).' });
     const v = G.state.voices.length;
-    if (v < 3) return { id: 'voices', vague: `Een lied voor het hele dal zing je niet alleen. Je hebt ${v} van de 3 stemmen.`, direct: 'Je krijgt stemmen door lief te zijn voor anderen. Brokkel (brood), Sabeth (medaillon), Teun (een herinnering), Sluip (de vos in het bos), Wieke (de bladzijde) en Isolde (in de spiegel).' };
-    if (!G.has('maanglas') && !f('maanglasPlaced')) return { id: 'glas', vague: 'Het oude glas is gebarsten. Een nieuw lied heeft nieuw glas nodig.', direct: 'Blaas Maanglas in Oma\'s oven: sterrenzand + vuurbloem + blaaspijp.' };
-    return { id: 'final', vague: 'Het is aan jou, Mira. Ik ben maar een kraai.', direct: 'Praat met de Grijze Heer en maak je keuze.' };
+    add(f('ringsDone') && v < 3, { id: 'voices', at: ['*'], vague: 'Een lied voor het hele dal zing je niet alleen. Je hebt nog niet genoeg stemmen.', direct: 'Je krijgt stemmen door lief te zijn voor anderen. Brokkel (brood), Sabeth (medaillon), Teun (een herinnering), Sluip (de vos in het bos), Wieke (de bladzijde) en Isolde (in de spiegel).' });
+    add(f('ringsDone') && !h('maanglas') && !f('maanglasPlaced'), { id: 'glas', at: ['werkplaats'], vague: 'Het oude glas is gebarsten. Een nieuw lied heeft nieuw glas nodig.', direct: 'Blaas Maanglas in Oma\'s oven. Daarvoor heb je sterrenzand, een vuurbloem en de blaaspijp nodig.' });
+    // extra's: niet nodig om het spel uit te spelen, wel voor stemmen en het mooiste einde
+    add(f('kwastJoined') && !f('sluipFree'), { id: 'sluip', opt: true, voice: true, at: ['bos'], vague: 'Hoor je dat? Er zit iemand vast in die braamstruik.', direct: 'Gebruik de haak of de werphaak op de braamstruik.' });
+    add(f('islandVisited') && !f('bottleTaken'), { id: 'fles', opt: true, at: ['eiland'], vague: 'Boven in die oude mast glinstert iets.', direct: 'Tik op het schipwrak. Kwast kan het halen, of gebruik je werphaak.' });
+    add(h('fles'), { id: 'flesopen', opt: true, at: ['*'], vague: 'Er zit iets in die fles. Papier, geloof ik.', direct: 'Tik twee keer op de fles in je rugzak.' });
+    add(h('bladzijde') && !f('pageBack'), { id: 'page', opt: true, voice: true, at: ['eiland'], vague: 'Een boek zonder begin is maar een half boek.', direct: 'Geef de eerste bladzijde terug aan Wieke.' });
+    add(f('isoldeBlamed') && !f('isoldeForgiven'), { id: 'isolde', opt: true, voice: true, at: ['trap'], vague: 'Dat spiegelbeeld keek zo verdrietig. Misschien moet je nog iets zeggen.', direct: 'Praat nog eens met Isolde en zeg sorry.' });
+    add(f('sabethAccused') && !f('sabethForgiven'), { id: 'sabethsorry', opt: true, voice: true, at: ['holte'], vague: 'Je was een beetje boos op Sabeth. Was dat wel eerlijk?', direct: 'Praat met Sabeth en zeg sorry.' });
+    add(f('heerAppeared') && !f('ending') && v >= 3 && (h('maanglas') || f('maanglasPlaced')), { id: 'final', at: ['torenkamer'], vague: 'Het is aan jou, Mira. Ik ben maar een kraai.', direct: 'Praat met de Grijze Heer en maak je keuze.' });
+    return g;
+  }
+
+  G.hints = function (G) {
+    const sc = G.state.scene;
+    const goals = hintGoals(G);
+    const atHere = (x) => x.at.includes(sc), anywhere = (x) => x.at.includes('*');
+    const here = (x) => atHere(x) || anywhere(x);
+    const main = goals.filter((x) => !x.opt), extra = goals.filter((x) => x.opt);
+    // 1. iets voor het verhaal op deze plek, 2. iets met je rugzak, 3. de volgende stap elders,
+    // 4. een extraatje (alleen als het verhaal even niets vraagt)
+    // zoek je nog stemmen, dan eerst een stem die je hier kunt verdienen
+    const voiceHere = main.some((x) => x.id === 'voices') && extra.find((x) => x.voice && atHere(x));
+    const pick = voiceHere || main.find(atHere) || main.find(anywhere) || main[0] || extra.find(here) || extra[0];
+    if (!pick) return { id: 'free', vague: 'Kijk maar rustig rond. Ik weet het ook even niet.', direct: 'Kijk maar rustig rond. Ik weet het ook even niet.' };
+    const target = pick.at[0];
+    return Object.assign({}, pick, { route: here(pick) ? null : ROUTE[target] });
   };
 
   /* ==========================================================

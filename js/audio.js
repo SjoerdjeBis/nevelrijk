@@ -491,7 +491,7 @@
       u.lang = 'nl-NL';
       const v = pickVoice(cast.gender, speaker); if (v) { u.voice = v; u.lang = v.lang; }
       u.pitch = Math.max(0, Math.min(2, cast.pitch));
-      u.rate = Math.max(0.5, Math.min(2, cast.rate * A.voiceRate));
+      u.rate = Math.max(0.5, Math.min(2, cast.rate * 1.1 * A.voiceRate)); // standaard iets vlotter
       u.volume = A.vol.voice;
       let done = false; const fin = () => { if (!done) { done = true; clearInterval(keep); resolve(); } };
       u.onend = fin; u.onerror = fin;

@@ -1,19 +1,73 @@
 {
-  "_uitleg": "Per personage een Azure-stem. De vier MAI-stemmen (Fleur, Harper, Sander, Grant) horen elk bij één veelpratend personage; de rest gebruikt de klassieke Nederlandse en Vlaamse stemmen. pitch en rate zijn procenten. Na een wijziging: node tools/stemmen.mjs opnieuw. Alle stemmen zien: node tools/stemmen.mjs stemmen",
+  "_uitleg": "Per personage een Azure-stem. De vier MAI-stemmen (Fleur, Harper, Sander, Grant) horen elk bij één veelpratend personage; de rest gebruikt de klassieke Nederlandse en Vlaamse stemmen. pitch en rate zijn procenten. Na een wijziging: node tools/stemmen.mjs opnieuw. Alle stemmen zien: node tools/stemmen.mjs stemmen Alle tempo's staan 10 procentpunt sneller dan de eerste versie.",
   "pauseMs": 3200,
   "cast": {
-    "mira":      { "voice": "nl-NL-Fleur:MAI-Voice-2",    "pitch": "+4%",  "rate": "+2%" },
-    "kwast":     { "voice": "nl-NL-Sander:MAI-Voice-2",   "pitch": "+14%", "rate": "+8%", "style": "excited" },
-    "verteller": { "voice": "nl-NL-Harper:MAI-Voice-2.1", "pitch": "0%",   "rate": "-6%", "style": "audiobook" },
-    "brokkel":   { "voice": "nl-NL-Grant:MAI-Voice-2.1",  "pitch": "-24%", "rate": "-12%" },
-    "teun":      { "voice": "nl-BE-ArnaudNeural",  "pitch": "-12%", "rate": "-12%" },
-    "sabeth":    { "voice": "nl-BE-DenaNeural",    "pitch": "-10%", "rate": "-8%" },
-    "wieke":     { "voice": "nl-NL-FennaNeural",   "pitch": "+10%", "rate": "-6%" },
-    "grijs":     { "voice": "nl-NL-MaartenNeural", "pitch": "-24%", "rate": "-20%" },
-    "isolde":    { "voice": "nl-NL-ColetteNeural", "pitch": "+4%",  "rate": "-12%" },
-    "sluip":     { "voice": "nl-NL-FennaNeural",   "pitch": "+20%", "rate": "-2%" },
-    "oma":       { "voice": "nl-NL-ColetteNeural", "pitch": "-10%", "rate": "-14%" },
-    "hanna":     { "voice": "nl-BE-DenaNeural",    "pitch": "+6%",  "rate": "+4%" },
-    "stenen":    { "voice": "nl-NL-FennaNeural",   "pitch": "+26%", "rate": "-22%" }
+    "mira": {
+      "voice": "nl-NL-Fleur:MAI-Voice-2",
+      "pitch": "+4%",
+      "rate": "+12%"
+    },
+    "kwast": {
+      "voice": "nl-NL-Sander:MAI-Voice-2",
+      "pitch": "+14%",
+      "rate": "+18%",
+      "style": "excited"
+    },
+    "verteller": {
+      "voice": "nl-NL-Harper:MAI-Voice-2.1",
+      "pitch": "0%",
+      "rate": "+4%",
+      "style": "audiobook"
+    },
+    "brokkel": {
+      "voice": "nl-NL-Grant:MAI-Voice-2.1",
+      "pitch": "-24%",
+      "rate": "-2%"
+    },
+    "teun": {
+      "voice": "nl-BE-ArnaudNeural",
+      "pitch": "-12%",
+      "rate": "-2%"
+    },
+    "sabeth": {
+      "voice": "nl-BE-DenaNeural",
+      "pitch": "-10%",
+      "rate": "+2%"
+    },
+    "wieke": {
+      "voice": "nl-NL-FennaNeural",
+      "pitch": "+10%",
+      "rate": "+4%"
+    },
+    "grijs": {
+      "voice": "nl-NL-MaartenNeural",
+      "pitch": "-24%",
+      "rate": "-10%"
+    },
+    "isolde": {
+      "voice": "nl-NL-ColetteNeural",
+      "pitch": "+4%",
+      "rate": "-2%"
+    },
+    "sluip": {
+      "voice": "nl-NL-FennaNeural",
+      "pitch": "+20%",
+      "rate": "+8%"
+    },
+    "oma": {
+      "voice": "nl-NL-ColetteNeural",
+      "pitch": "-10%",
+      "rate": "-4%"
+    },
+    "hanna": {
+      "voice": "nl-BE-DenaNeural",
+      "pitch": "+6%",
+      "rate": "+14%"
+    },
+    "stenen": {
+      "voice": "nl-NL-FennaNeural",
+      "pitch": "+26%",
+      "rate": "-12%"
+    }
   }
 }
