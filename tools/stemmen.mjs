@@ -12,6 +12,7 @@
      node tools/stemmen.mjs test       één proefzin per personage → audio/voice-test/
      node tools/stemmen.mjs alles      maakt alle ontbrekende zinnen
      node tools/stemmen.mjs opnieuw    maakt álles opnieuw (na het wijzigen van stemmen)
+     node tools/stemmen.mjs herneem a,b  spreekt alleen deze zinnen (sleutels) opnieuw in
 
    Sleutel en regio: zet ze in tools/.env (wordt nergens heen gestuurd
    behalve naar Azure):
@@ -26,8 +27,9 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const VoiceKey = require(path.join(ROOT, 'js/voicekey.js'));
-// Een andere stemmenset kan als derde argument: node tools/stemmen.mjs test tools/stemmen.config.mai.json
-const CONFIG_FILE = process.argv[3] ? path.resolve(process.argv[3]) : path.join(ROOT, 'tools/stemmen.config.json');
+// Een andere stemmenset kiezen: node tools/stemmen.mjs test --config=tools/stemmen.config.mai.json
+const configArg = process.argv.find((a) => a.startsWith('--config='));
+const CONFIG_FILE = configArg ? path.resolve(configArg.slice(9)) : path.join(ROOT, 'tools/stemmen.config.json');
 const CONFIG = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
 const OUT = path.join(ROOT, 'audio/voice');
 const SOURCES = ['js/scenes.js', 'js/puzzles.js', 'js/engine.js'];
@@ -122,7 +124,8 @@ function literals(toks, expr) {
   return res;
 }
 
-const PROP_SPEAKER = { desc: 'mira', look: 'mira', vague: 'kwast', direct: 'kwast', q: 'brokkel' };
+// Hints geeft Kwast, of Mira zelf zolang ze Kwast nog niet kent.
+const PROP_SPEAKER = { desc: ['mira'], look: ['mira'], vague: ['kwast', 'mira'], direct: ['kwast', 'mira'], q: ['brokkel'] };
 function extract() {
   const lines = new Map();
   const add = (speaker, text, where) => {
@@ -133,14 +136,14 @@ function extract() {
     const toks = tokenize(fs.readFileSync(path.join(ROOT, file), 'utf8'));
     for (let i = 0; i < toks.length; i++) {
       const t = toks[i], n = toks[i + 1];
-      if (t.t === 'comment') { // /* stem:wie */ <expressie>
-        const who = t.v.match(/stem:(\w+)/)[1];
-        literals(toks, exprAt(toks, i + 1)).forEach((s) => add(who, s, file));
+      if (t.t === 'comment') { // /* stem:wie */ <expressie>   (meerdere: /* stem:kwast,mira */)
+        const who = t.v.match(/stem:([\w,]+)/)[1].split(',');
+        literals(toks, exprAt(toks, i + 1)).forEach((s) => who.forEach((w) => add(w, s, file)));
         continue;
       }
       if (t.t !== 'word') continue;
       if (n && n.v === ':' && PROP_SPEAKER[t.v] && !(toks[i - 1] && toks[i - 1].v === '?')) {
-        literals(toks, exprAt(toks, i + 2)).forEach((s) => add(PROP_SPEAKER[t.v], s, file));
+        literals(toks, exprAt(toks, i + 2)).forEach((s) => PROP_SPEAKER[t.v].forEach((w) => add(w, s, file)));
         continue;
       }
       if (!n || n.v !== '(') continue;
@@ -164,7 +167,13 @@ function extract() {
 
 /* ---------------- Azure ---------------- */
 const xml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+// Drie puntjes worden door sommige stemmen als heel lange stilte uitgesproken.
+// Midden in een zin wordt het een komma, aan het eind een punt.
+function spoken(text) {
+  return text.replace(/^\s*\.\.\.\s*/, '').replace(/\.\.\.(?=\s*[a-zà-ÿ])/g, ',').replace(/\.\.\./g, '.').replace(/([,.])\s*([,.])/g, '$1');
+}
 function ssml(speaker, text) {
+  text = spoken(text);
   const c = CONFIG.cast[speaker] || CONFIG.cast.verteller;
   const lang = c.voice.slice(0, 5);
   let inner = `<prosody pitch="${c.pitch || '0%'}" rate="${c.rate || '0%'}">${xml(text)}</prosody>`;
@@ -174,13 +183,14 @@ function ssml(speaker, text) {
 }
 async function synth(speaker, text, file) {
   const key = process.env.AZURE_SPEECH_KEY, region = process.env.AZURE_SPEECH_REGION || 'westeurope';
+  const body = ssml(speaker, text); // fouten hierin zijn geen netwerkfouten
   for (let attempt = 0; attempt < 6; attempt++) {
     let res;
     try {
       res = await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
         method: 'POST',
         headers: { 'Ocp-Apim-Subscription-Key': key, 'Content-Type': 'application/ssml+xml', 'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3', 'User-Agent': 'nevelrijk-stemmen' },
-        body: ssml(speaker, text),
+        body,
       });
     } catch (e) { // verbinding even weg: wachten en opnieuw proberen
       console.log(`  geen verbinding (${e.cause ? e.cause.code : e.message}), opnieuw…`);
@@ -194,31 +204,12 @@ async function synth(speaker, text, file) {
   throw new Error('Azure blijft bezet. Probeer het later opnieuw.');
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-// Pakketjes: de opnames achter elkaar in bestanden van ~800 KB, in verhaalvolgorde.
-// Zo blijft het aantal bestanden online klein (een artifact mag er hooguit 511 hebben)
-// en zitten de zinnen van één scène meestal in hetzelfde pakketje.
-const PACK_DIR = path.join(ROOT, 'audio/voice-packs');
-const PACK_SIZE = 800 * 1024;
-function writePacks(order) {
-  fs.rmSync(PACK_DIR, { recursive: true, force: true }); fs.mkdirSync(PACK_DIR, { recursive: true });
-  const packs = {}; let n = 0, parts = [], size = 0;
-  const flush = () => { if (!parts.length) return; fs.writeFileSync(path.join(PACK_DIR, `p${String(n).padStart(2, '0')}.mp3`), Buffer.concat(parts)); n++; parts = []; size = 0; };
-  for (const k of order) {
-    const f = path.join(OUT, k + '.mp3'); if (!fs.existsSync(f)) continue;
-    const buf = fs.readFileSync(f);
-    if (size + buf.length > PACK_SIZE) flush();
-    packs[k] = [n, size, buf.length]; parts.push(buf); size += buf.length;
-  }
-  flush();
-  return { packs, count: n };
-}
 function writeManifest() {
   const keys = fs.readdirSync(OUT).filter((f) => f.endsWith('.mp3')).map((f) => f.slice(0, -4)).sort();
   const map = Object.fromEntries(keys.map((k) => [k, 1]));
+  // Volgorde zoals de zinnen in de code staan: de game laadt de volgende zinnen alvast vooruit.
   const order = lines.map((l) => l.key).filter((k) => map[k]);
-  const { packs, count } = writePacks(order);
-  fs.writeFileSync(path.join(OUT, 'manifest.js'), `/* Gemaakt door tools/stemmen.mjs — niet met de hand bewerken. */\nwindow.VOICE_MANIFEST = ${JSON.stringify(map)};\n/* opname -> [pakketje, begin, lengte] in audio/voice-packs/pNN.mp3 */\nwindow.VOICE_PACKS = ${JSON.stringify(packs)};\n`);
-  console.log(`${count} pakketjes in audio/voice-packs/.`);
+  fs.writeFileSync(path.join(OUT, 'manifest.js'), `/* Gemaakt door tools/stemmen.mjs — niet met de hand bewerken. */\nwindow.VOICE_MANIFEST = ${JSON.stringify(map)};\nwindow.VOICE_ORDER = ${JSON.stringify(order)};\n`);
   return keys.length;
 }
 function needKey() {
@@ -281,8 +272,18 @@ if (cmd === 'lijst') {
   const keep = new Set(lines.map((l) => l.key));
   fs.readdirSync(OUT).filter((f) => f.endsWith('.mp3') && !keep.has(f.slice(0, -4))).forEach((f) => fs.unlinkSync(path.join(OUT, f)));
   console.log(`\nKlaar: ${writeManifest()} opnames in audio/voice/.`);
-} else if (cmd === 'pakken') {
+} else if (cmd === 'manifest') {
   console.log(`Manifest: ${writeManifest()} opnames.`);
+} else if (cmd === 'herneem') {
+  // node tools/stemmen.mjs herneem <sleutel,sleutel,...>  of  herneem bestand.json (lijst met sleutels)
+  needKey();
+  const arg = process.argv.slice(3).find((a) => !a.startsWith('--')) || '';
+  const keys = new Set(fs.existsSync(arg) ? JSON.parse(fs.readFileSync(arg, 'utf8')) : arg.split(','));
+  const todo = lines.filter((l) => keys.has(l.key));
+  console.log(`${todo.length} zinnen opnieuw inspreken.`);
+  let k = 0;
+  for (const l of todo) { k++; process.stdout.write(`[${k}/${todo.length}] ${l.speaker}: ${l.text.slice(0, 60)}\n`); await synth(l.speaker, l.text, path.join(OUT, l.key + '.mp3')); await sleep(CONFIG.pauseMs); }
+  console.log(`Klaar: ${writeManifest()} opnames.`);
 } else {
-  console.log('Onbekende opdracht. Kies: lijst, stemmen, test, alles, opnieuw of pakken.');
+  console.log('Onbekende opdracht. Kies: lijst, stemmen, test, alles, opnieuw, herneem of manifest.');
 }

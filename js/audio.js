@@ -56,7 +56,7 @@
   };
 
   A.init = function () {
-    if (A.ctx) { if (A.ctx.state === 'suspended') A.ctx.resume(); return; }
+    if (A.ctx) { if (A.ctx.state !== 'running') A.ctx.resume().catch(() => {}); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     A.ctx = new AC();
@@ -164,6 +164,12 @@
     });
   }
 
+  function hum(freq, t, bus, vol) { // zachte, korte grondtoon onder een klokje
+    const c = A.ctx; const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = freq;
+    const g = c.createGain(); o.connect(g).connect(bus);
+    env(g, t, 0.04, vol, 0.3, vol * 0.4, 0.8, 0.2); o.start(t); o.stop(t + 1.4);
+  }
+
   function noiseBuffer() {
     if (A._noise) return A._noise;
     const c = A.ctx, len = c.sampleRate * 2;
@@ -215,6 +221,11 @@
     const c = A.ctx, th = A.theme; if (!c || !th) return;
     const stepDur = 60 / th.bpm / 2; // achtsten
     const BAR = 16; // twee maten per akkoord: alles beweegt traag
+    // Liep de pagina even vast? Dan gemiste noten overslaan in plaats van ze allemaal tegelijk in te halen.
+    if (A.nextTime < c.currentTime - 0.1) {
+      const missed = Math.ceil((c.currentTime - A.nextTime) / stepDur);
+      A.step += missed; A.nextTime += missed * stepDur;
+    }
     while (A.nextTime < c.currentTime + 0.4) {
       const bar = Math.floor(A.step / BAR) % th.chords.length;
       const inBar = A.step % BAR;
@@ -318,8 +329,23 @@
   }
 
   /* ---------------- effecten ---------------- */
+  // Begrenzer: snel achter elkaar tikken mag het geluid niet laten haperen.
+  // Elk geluid heeft een minimale tussenpoos, en er klinken nooit te veel effecten tegelijk.
+  const SFX_GAP = { tap: 60, click: 60, step: 120, stone: 110, glass: 90, fail: 150, whoosh: 150, bubble: 120, poof: 150, crow: 400, heart: 300, pickup: 200 };
+  const lastSfx = {}; let recentSfx = [];
+  function sfxAllowed(name) {
+    const now = performance.now();
+    if (SFX_GAP[name] && now - (lastSfx[name] || 0) < SFX_GAP[name]) return false;
+    recentSfx = recentSfx.filter((x) => now - x < 1000);
+    if (recentSfx.length >= 14 && name !== 'magic' && name !== 'chapter') return false;
+    lastSfx[name] = now; recentSfx.push(now);
+    return true;
+  }
+
   A.sfx = function (name, opt) {
     if (!A.ctx) return;
+    if (A.ctx.state !== 'running') A.ctx.resume().catch(() => {});
+    if (!sfxAllowed(name)) return;
     const c = A.ctx, t = c.currentTime + 0.01, b = A.sfxBus;
     switch (name) {
       case 'tap': pluck(NOTE(84), t, b, 0.05, 0.2); break;
@@ -332,7 +358,7 @@
       case 'magic': for (let i = 0; i < 9; i++) bell(NOTE(84 + [0, 4, 7, 11, 12, 16, 19, 23, 24][i]), t + i * 0.06, b, 0.07); noise(t, 1.4, 'highpass', 6000, 1, 0.06, b, 0.3); break;
       case 'splash': noise(t, 0.7, 'lowpass', 1400, 0.8, 0.4, b, 0.01); break;
       case 'whoosh': { const f = noise(t, 0.6, 'bandpass', 400, 2, 0.3, b, 0.15); f.frequency.exponentialRampToValueAtTime(2500, t + 0.5); } break;
-      case 'stone': { const st = STONES.find((s) => s.id === opt) || STONES[0]; bell(NOTE(st.midi), t, b, 0.22); pad(NOTE(st.midi - 12), t, 0.4, b, 0.04, 0.4); } break;
+      case 'stone': { const st = STONES.find((s) => s.id === opt) || STONES[0]; bell(NOTE(st.midi), t, b, 0.22); hum(NOTE(st.midi - 12), t, b, 0.05); } break;
       case 'note': bell(NOTE(opt), t, b, 0.16); break;
       case 'musicbox': (opt || LULLABY.hard).forEach((id, i) => { const st = STONES.find((s) => s.id === id); bell(NOTE(st.midi), t + i * 0.55, b, 0.16); }); break;
       case 'bubble': for (let i = 0; i < 6; i++) bubble(t + i * 0.09, b); break;
@@ -412,29 +438,60 @@
   const hasRecording = (k) => !!(window.VOICE_MANIFEST && window.VOICE_MANIFEST[k]);
   A.recordedCount = () => (window.VOICE_MANIFEST ? Object.keys(window.VOICE_MANIFEST).length : 0);
 
-  // Online staan de opnames in pakketjes (zie tools/stemmen.mjs); lokaal kunnen ook losse bestanden.
-  const packCache = new Map();
-  function loadPack(n) {
-    if (!packCache.has(n)) {
-      const p = fetch('audio/voice-packs/p' + String(n).padStart(2, '0') + '.mp3').then((r) => { if (!r.ok) throw new Error('geen pakketje'); return r.arrayBuffer(); });
-      p.catch(() => packCache.delete(n));
-      packCache.set(n, p);
-      if (packCache.size > 6) packCache.delete(packCache.keys().next().value);
+  // Elke zin is een klein los bestand (~40 kB). De bestandsnaam bevat een hash van de tekst,
+  // dus een opname verandert nooit: de browser mag hem gerust bewaren.
+  const rawCache = new Map(); // key -> Promise<ArrayBuffer> (ook voor vooruit laden)
+  function fetchRecording(k) {
+    if (!rawCache.has(k)) {
+      const p = fetch(VOICE_DIR + k + '.mp3').then((r) => { if (!r.ok) throw new Error('geen opname'); return r.arrayBuffer(); });
+      p.catch(() => rawCache.delete(k));
+      rawCache.set(k, p);
+      if (rawCache.size > 40) rawCache.delete(rawCache.keys().next().value);
     }
-    return packCache.get(n);
+    return rawCache.get(k);
   }
-  async function fetchRecording(k) {
-    const loc = window.VOICE_PACKS && window.VOICE_PACKS[k];
-    if (loc) {
-      try { const all = await loadPack(loc[0]); return all.slice(loc[1], loc[1] + loc[2]); } catch (e) { /* val terug op los bestand */ }
+  // De zinnen die in de code direct na deze komen, worden meestal ook direct daarna gezegd.
+  // Die laden we alvast, zodat er geen stilte valt terwijl een bestand binnenkomt.
+  let orderIndex = null;
+  function prefetchAfter(k, n) {
+    const order = window.VOICE_ORDER; if (!order) return;
+    if (!orderIndex) { orderIndex = new Map(); order.forEach((key, i) => orderIndex.set(key, i)); }
+    const i = orderIndex.get(k); if (i == null) return;
+    for (let j = i + 1; j <= i + (n || 6) && j < order.length; j++) fetchRecording(order[j]).catch(() => {});
+  }
+  A.prefetchVoice = (keys) => keys.forEach((k) => { if (hasRecording(k)) fetchRecording(k).catch(() => {}); });
+
+  // Soms laat een stem midden in een zin een lange stilte vallen. Die knippen we in tot ~0,4 s,
+  // en stilte aan het begin en eind halen we weg.
+  function squeezeSilence(buf) {
+    const sr = buf.sampleRate, chs = buf.numberOfChannels, d0 = buf.getChannelData(0);
+    const win = Math.floor(sr * 0.02), n = Math.ceil(d0.length / win), loud = new Uint8Array(n);
+    for (let w = 0; w < n; w++) { let m = 0; for (let i = w * win, e = Math.min(d0.length, i + win); i < e; i++) { const v = Math.abs(d0[i]); if (v > m) m = v; } loud[w] = m > 0.025 ? 1 : 0; }
+    const first = loud.indexOf(1), last = loud.lastIndexOf(1); if (first < 0) return buf;
+    const maxGap = Math.round(0.45 * sr / win), keepGap = Math.round(0.35 * sr / win);
+    const keep = []; // [startWin, endWin)
+    let segStart = Math.max(0, first - 2), w = first;
+    while (w <= last) {
+      if (!loud[w]) {
+        let e = w; while (e <= last && !loud[e]) e++;
+        if (e - w > maxGap) { keep.push([segStart, w + Math.floor(keepGap / 2)]); segStart = e - Math.ceil(keepGap / 2); }
+        w = e;
+      } else w++;
     }
-    const res = await fetch(VOICE_DIR + k + '.mp3');
-    if (!res.ok) throw new Error('geen opname');
-    return res.arrayBuffer();
+    keep.push([segStart, Math.min(n, last + 8)]);
+    const total = keep.reduce((t, [a, b]) => t + Math.min(d0.length, b * win) - a * win, 0);
+    if (total >= d0.length * 0.97) return buf; // niets te knippen
+    const out = A.ctx.createBuffer(chs, total, sr);
+    for (let c = 0; c < chs; c++) {
+      const src = buf.getChannelData(c), dst = out.getChannelData(c); let o = 0;
+      keep.forEach(([a, b]) => { const part = src.subarray(a * win, Math.min(src.length, b * win)); dst.set(part, o); o += part.length; });
+    }
+    return out;
   }
   async function loadBuffer(k) {
     if (bufCache.has(k)) return bufCache.get(k);
-    const buf = await A.ctx.decodeAudioData(await fetchRecording(k));
+    const raw = await fetchRecording(k);
+    const buf = squeezeSilence(await A.ctx.decodeAudioData(raw.slice(0)));
     bufCache.set(k, buf);
     if (bufCache.size > 24) bufCache.delete(bufCache.keys().next().value);
     return buf;
@@ -477,7 +534,7 @@
     if (!A.voiceOn || !text) return Promise.resolve();
     A.stopSpeech();
     const k = window.VoiceKey ? window.VoiceKey.key(speaker, text) : null;
-    if (k && hasRecording(k)) return playRecording(speaker, k).then((ok) => (ok ? undefined : speakDevice(speaker, text)));
+    if (k && hasRecording(k)) { prefetchAfter(k); return playRecording(speaker, k).then((ok) => (ok ? undefined : speakDevice(speaker, text))); }
     return speakDevice(speaker, text);
   };
 

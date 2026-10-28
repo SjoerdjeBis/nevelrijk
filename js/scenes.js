@@ -17,7 +17,9 @@
   const G = window.G, Art = window.Art, A = window.Audio9, P = window.Puzzles;
   const say = (w, t) => G.say(w, t);
   const M = (t) => G.say('mira', t);
-  const K = (t) => { A.sfx('crow'); return G.say('kwast', t); };
+  // Kwast praat alleen als hij met je meereist. KW gebruikt de ontmoeting zelf.
+  const KW = (t) => { A.sfx('crow'); return G.say('kwast', t); };
+  const K = (t) => (G.flag('kwastJoined') ? KW(t) : Promise.resolve());
 
   /* ================= voorwerpen ================= */
   G.items = {
@@ -138,7 +140,7 @@
   }
 
   // Hoe kom je ergens? Kwast zegt het erbij als je niet op de goede plek staat.
-  const ROUTE = /* stem:kwast */ {
+  const ROUTE = /* stem:kwast,mira */ {
     werkplaats: 'Dat is thuis, in Oma\'s werkplaats. Die ligt links van het dorpsplein.',
     dorp: 'Dat is op het dorpsplein, midden in het dorp.',
     bos: 'Dat is in het Fluisterbos. Vanaf het dorpsplein ga je omhoog.',
@@ -471,9 +473,9 @@
           await M('<b>“De brug is dicht wegens TROL. Niet voeren!”</b> …er staat iemand bij gekrabbeld: <em>“of juist wel?”</em>');
           await M('En een tekening van de lantaarn. Eronder staat: <b>“Waarom vergeet ik steeds dingen?”</b> Wie heeft dat geschreven?');
         } },
-        { id: 'bos', name: 'Naar het Fluisterbos', exit: 'up', to: 'bos', x: 410, y: 800, w: 180, h: 200, walk: [500, 1130] },
+        { id: 'bos', name: 'Naar het Fluisterbos', exit: 'up', to: 'bos', x: 410, y: 800, w: 180, h: 200, walk: [500, 1130], tap: async (G) => { if (!f('kwastJoined')) await meetKwast(G, true); await G.goto('bos'); } },
         { id: 'huis', name: 'Naar de werkplaats', exit: 'left', to: 'werkplaats', x: 0, y: 1180, w: 110, h: 220, walk: [80, 1300] },
-        { id: 'brug', name: 'Naar de brug', exit: 'right', to: 'brug', x: 900, y: 1160, w: 100, h: 240, walk: [930, 1290] },
+        { id: 'brug', name: 'Naar de brug', exit: 'right', to: 'brug', x: 900, y: 1160, w: 100, h: 240, walk: [930, 1290], tap: async (G) => { if (!f('kwastJoined')) await meetKwast(G, true); await G.goto('brug'); } },
       ];
       if (!f('kwastJoined')) list.push({ id: 'kraai', name: 'Kraai', x: 820, y: 780, w: 110, h: 110, walk: [800, 1180], tap: async (G) => meetKwast(G) });
       else list.push(kwastHot(G, 870, 880));
@@ -487,23 +489,24 @@
     },
   });
 
-  async function meetKwast(G) {
+  async function meetKwast(G, stopped) {
     A.sfx('crow');
-    await K('Kraaa! Eindelijk. Ik zit hier al sinds middernacht te wachten. Mijn veren zijn helemaal klam.');
+    if (stopped) await KW('Ho, ho! Waar ga jij heen? Niet zonder mij!');
+    await KW('Kraaa! Eindelijk. Ik zit hier al sinds middernacht te wachten. Mijn veren zijn helemaal klam.');
     await M('Kwast! Oma\'s kraai! Weet jij waar Oma is?');
-    await K('Natuurlijk weet ik dat. Ik weet alles. Ze is naar de toren gevlogen. Nou ja, gevlogen… geroeid. Mensen kunnen niet vliegen. Zielig, hoor.');
+    await KW('Natuurlijk weet ik dat. Ik weet alles. Ze is naar de toren gevlogen. Nou ja, gevlogen… geroeid. Mensen kunnen niet vliegen. Zielig, hoor.');
     const r = await G.choose([
       { text: 'Waarom is de lantaarn uit, Kwast?', value: 'why' },
       { text: 'Ga je met me mee?', value: 'join' },
     ]);
     if (r === 'why') {
-      await K('Dat mag ik niet zeggen. Ze heeft het me laten beloven. Met een kraaltje erbij. Een blauwe.');
-      await K('Maar ze zei wel: <em>“Als Mira komt, help haar dan.”</em> Dus. Hier ben ik. Hulpvaardig en beeldschoon.');
+      await KW('Dat mag ik niet zeggen. Ze heeft het me laten beloven. Met een kraaltje erbij. Een blauwe.');
+      await KW('Maar ze zei wel: <em>“Als Mira komt, help haar dan.”</em> Dus. Hier ben ik. Hulpvaardig en beeldschoon.');
     } else {
-      await K('Mee? Ik? Met een mens, door de nevel? …Ja, goed. Oma zou het willen. En jij verdwaalt anders binnen vijf minuten.');
+      await KW('Mee? Ik? Met een mens, door de nevel? …Ja, goed. Oma zou het willen. En jij verdwaalt anders binnen vijf minuten.');
     }
     G.set('kwastJoined'); G.kind(0); G.refresh();
-    await K('Weet je niet wat je moet doen? Druk dan op mijn veer bovenin. 🪶 Dan help ik je. Gratis. Nou ja, een kraaltje mag altijd.');
+    await KW('Weet je niet wat je moet doen? Druk dan op mijn veer bovenin. 🪶 Dan help ik je. Gratis. Nou ja, een kraaltje mag altijd.');
     G.done('brief');
     G.task('stenen', 'Volg het slaapliedje naar de stenen in het Fluisterbos.');
   }
@@ -634,7 +637,7 @@
             await K('Laat hem lekker zitten, Mira. Vossen eten kraaien. Dat weet iedereen.');
             const r = await G.choose([
               { text: 'Ik help je, vosje. Even stilzitten.', value: 'help' },
-              { text: 'Kwast heeft gelijk. Sorry, vos.', value: 'leave' },
+              { text: G.flag('kwastJoined') ? 'Kwast heeft gelijk. Sorry, vos.' : 'Ik heb geen tijd. Sorry, vos.', value: 'leave' },
             ]);
             if (r === 'leave') { G.choice('vos', 'Je liet de nevelvos eerst in de braamstruik zitten.'); await say('sluip', 'Iedereen loopt maar voorbij. Iedereen vergeet me altijd…'); await M('<em>(Misschien kom ik later terug.)</em>'); return; }
           }
@@ -994,7 +997,7 @@
     const f = (k) => G.flag(k);
     if (!f('sabethMet')) {
       G.set('sabethMet');
-      await say('sabeth', 'Een kleinkind van Brem, bij míjn huis. Met een kraai. Wat een avond.');
+      await say('sabeth', G.flag('kwastJoined') ? 'Een kleinkind van Brem, bij míjn huis. Met een kraai. Wat een avond.' : 'Een kleinkind van Brem, bij míjn huis. Wat een avond.');
       await M('Weet u waar mijn oma is? De lantaarn is uit, en ze is weg, en…');
       await say('sabeth', 'Ik weet veel. Ik weet alles over de nevel. Maar ik vertel niets aan iemand die ik niet ken.');
       await say('sabeth', 'Wil je dat ik je vertrouw? Help me dan eerst. Ik ben mijn medaillon kwijt. Groen, met een blaadje. Het viel ergens… maar ik weet niet meer waar.');
@@ -1181,7 +1184,7 @@
   }
   async function ferryRide(G) {
     if (!G.flag('islandVisited')) {
-      await say('teun', 'Instappen dan. Hou je kraai goed vast.');
+      await say('teun', G.flag('kwastJoined') ? 'Instappen dan. Hou je kraai goed vast.' : 'Instappen dan. Hou je goed vast.');
       A.sfx('splash'); await G.goto('eiland', 'veer'); return;
     }
     const r = await G.choose([

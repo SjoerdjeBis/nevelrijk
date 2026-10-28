@@ -584,7 +584,7 @@
       G.state.seen[key] = lvl + 1;
       if (who === 'kwast') A.sfx('crow');
       for (const t of lines.filter(Boolean)) await G.say(who, t);
-      if (lvl === 0 && h.direct) await G.say(who, '<em>(Vraag nog eens als je een duidelijkere hint wilt.)</em>');
+      if (lvl === 0 && h.direct) await G.say(who, /* stem:kwast,mira */ '<em>(Vraag nog eens als je een duidelijkere hint wilt.)</em>');
     } finally { G.busy = false; hideDialog(); }
   };
 
