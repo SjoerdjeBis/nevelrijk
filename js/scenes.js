@@ -651,31 +651,116 @@
       return [x, y];
     },
     bg(G) {
+      const r = Art.rng(131);
+      // rotslagen in een klifwand: schuine strepen en losse brokken
+      const strata = (x0, x1, y0, y1, seed, dir) => {
+        const q = Art.rng(seed); let s = '';
+        for (let y = y0; y < y1; y += 34 + q() * 30) {
+          const tilt = dir * (8 + q() * 14);
+          s += `<path d="M${x0} ${y.toFixed(0)} Q${((x0 + x1) / 2).toFixed(0)} ${(y + tilt).toFixed(0)} ${x1} ${(y + tilt * 0.4).toFixed(0)}" stroke="#141224" stroke-width="${(2 + q() * 3).toFixed(1)}" opacity="${(0.35 + q() * 0.3).toFixed(2)}" fill="none"/>`;
+        }
+        for (let i = 0; i < 9; i++) { const x = x0 + q() * (x1 - x0), y = y0 + q() * (y1 - y0); s += `<path d="M${x.toFixed(0)} ${y.toFixed(0)} l${(18 + q() * 30).toFixed(0)} ${(-6 - q() * 10).toFixed(0)} l${(10 + q() * 16).toFixed(0)} ${(14 + q() * 12).toFixed(0)} z" fill="#a8a0c8" opacity=".14"/>`; }
+        return s;
+      };
+      // de stenen van de boog: wigvormige blokken langs de onderkant
+      let vous = '';
+      // dezelfde bochten als de brugpaden hieronder (kwadratische Bézier)
+      const qb = (a, c, b, t) => (1 - t) * (1 - t) * a + 2 * t * (1 - t) * c + t * t * b;
+      const archX = (t) => qb(300, 505, 710, t), archY = (t) => qb(1150, 1010, 1150, t);
+      const deckX = (t) => qb(240, 500, 770, t), deckY = (t) => qb(1080, 900, 1070, t);
+      for (let i = 0; i < 15; i++) {
+        const t0 = i / 15, t1 = (i + 1) / 15;
+        const a = [archX(t0), archY(t0)], b = [archX(t1), archY(t1)];
+        // wig: van de onderkant van de boog loodrecht naar buiten
+        const nx = (p, q) => { const dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy); return [dy / l * 34, -dx / l * 34]; };
+        const n = nx(a, b);
+        vous += `<path d="M${a[0].toFixed(0)} ${a[1].toFixed(0)} L${b[0].toFixed(0)} ${b[1].toFixed(0)} L${(b[0] + n[0]).toFixed(0)} ${(b[1] + n[1]).toFixed(0)} L${(a[0] + n[0]).toFixed(0)} ${(a[1] + n[1]).toFixed(0)} Z" fill="${['#8a8fa8', '#7d8299', '#93988f'][i % 3]}" stroke="#2a2a3c" stroke-width="3"/>`;
+      }
+      // borstwering (blokken bovenop de brug)
+      let wall = '';
+      for (let i = 0; i < 12; i++) {
+        const t = (i + 0.5) / 12, x = deckX(t), y = deckY(t);
+        wall += `<rect x="${(x - 20).toFixed(0)}" y="${(y - 38).toFixed(0)}" width="40" height="42" rx="5" fill="${i % 2 ? '#8b90a6' : '#80859c'}" stroke="#2a2a3c" stroke-width="3"/><rect x="${(x - 20).toFixed(0)}" y="${(y - 38).toFixed(0)}" width="40" height="42" rx="5" fill="url(#g-shade)"/>`;
+      }
+      // klimop die van de brug hangt
+      let ivy = '';
+      [0.08, 0.22, 0.75, 0.9].map((t) => [archX(t), archY(t) - 4]).forEach(([x, y], k) => {
+        const len = 60 + r() * 70;
+        ivy += `<path d="M${x} ${y} q${(r() - 0.5) * 20} ${len / 2} ${(r() - 0.5) * 14} ${len}" stroke="#2f5a3a" stroke-width="3" fill="none"/>`;
+        for (let j = 0; j < 6; j++) ivy += `<ellipse cx="${(x + (r() - 0.5) * 14).toFixed(0)}" cy="${(y + j * len / 6).toFixed(0)}" rx="7" ry="4.5" fill="${j % 2 ? '#4f8a52' : '#3d7044'}" transform="rotate(${(r() * 60 - 30).toFixed(0)} ${(x).toFixed(0)} ${(y + j * len / 6).toFixed(0)})"/>`;
+      });
       return `
-        ${Art.sky('br-sky', ['#0c1028', '#2a2a5a', '#5a3a6a', '#8a5a6a'])}
-        ${Art.stars(70, 31, 520)}
-        ${Art.moon(220, 230, 40, false)}
-        <!-- kloof en waterval -->
-        ${Art.ridge(600, 50, 13, '#2a2a50', { steps: 7 })}
-        <path d="M420 620 Q470 600 520 620 L560 1500 L380 1500 Z" fill="#7fa8d8" opacity=".55"/>
-        <path d="M440 620 L450 1500 M480 620 L478 1500 M505 620 L520 1500" stroke="#e6f2ff" stroke-width="5" opacity=".35" class="ripple"/>
-        ${Art.mist(1150, 160, 0.9, 'drift', 33)}
-        <path d="M0 640 L330 640 Q400 760 380 1500 L0 1500 Z" fill="#2c2840"/>
-        <path d="M1000 600 L620 620 Q560 760 600 1500 L1000 1500 Z" fill="#2a2640"/>
-        ${Art.pine(80, 700, 220, '#171530')}${Art.pine(180, 690, 180, '#171530')}${Art.pine(900, 660, 260, '#171530')}${Art.pine(780, 650, 200, '#171530')}
-        <!-- stenen brug -->
-        <path d="M250 1080 Q500 900 760 1060 L760 1130 Q500 990 250 1150 Z" fill="#6a6f86"/>
-        <path d="M250 1080 Q500 900 760 1060" stroke="#8b93a6" stroke-width="10" fill="none"/>
-        <path d="M330 1110 Q500 1020 690 1100 Q500 1060 330 1140Z" fill="#141226" opacity=".6"/>
-        ${[300, 360, 420, 480, 540, 600, 660, 720].map((x, i) => `<rect x="${x}" y="${1050 - Math.sin((x - 250) / 510 * Math.PI) * 140}" width="24" height="40" rx="6" fill="#7a8098"/>`).join('')}
-        <!-- grond -->
+        <defs>
+          <linearGradient id="br-cliff-l" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a4568"/><stop offset=".55" stop-color="#2e2a46"/><stop offset="1" stop-color="#16142a"/></linearGradient>
+          <linearGradient id="br-cliff-r" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3658"/><stop offset=".5" stop-color="#26223c"/><stop offset="1" stop-color="#121022"/></linearGradient>
+          <linearGradient id="br-water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe6ff" stop-opacity=".95"/><stop offset=".35" stop-color="#8fb8ea" stop-opacity=".85"/><stop offset="1" stop-color="#4a6aa8" stop-opacity=".55"/></linearGradient>
+          <linearGradient id="br-water-side" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1a2244" stop-opacity=".7"/><stop offset=".2" stop-color="#1a2244" stop-opacity="0"/><stop offset=".8" stop-color="#1a2244" stop-opacity="0"/><stop offset="1" stop-color="#1a2244" stop-opacity=".7"/></linearGradient>
+          <linearGradient id="br-gorge" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a1834" stop-opacity="0"/><stop offset="1" stop-color="#06050e"/></linearGradient>
+          <radialGradient id="br-spray" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#e8f2ff" stop-opacity=".75"/><stop offset=".5" stop-color="#b8cff0" stop-opacity=".3"/><stop offset="1" stop-color="#9ab4e0" stop-opacity="0"/></radialGradient>
+          <clipPath id="br-fall"><path d="M438 548 Q500 538 566 548 L600 1500 L404 1500 Z"/></clipPath>
+        </defs>
+        ${Art.sky('br-sky', ['#0a0c24', '#221f50', '#4a3a6e', '#7a5a78'])}
+        ${Art.stars(80, 31, 520)}
+        ${Art.moon(220, 220, 40, false)}
+        <!-- verre bergen in de nevel -->
+        ${Art.ridge(560, 70, 13, '#2c2a56', { steps: 6, peaky: true })}
+        ${Art.mist(600, 90, 0.7, 'drift', 35)}
+        ${Art.ridge(620, 40, 17, '#24224a', { steps: 8 })}
+        <!-- de kloof: achterwand -->
+        <path d="M330 600 Q500 560 680 590 L680 1500 L330 1500 Z" fill="#1a1834"/>
+        <path d="M330 600 Q500 560 680 590 L680 1500 L330 1500 Z" fill="url(#br-gorge)"/>
+        <!-- maanboog in de nevel van de waterval -->
+        <path d="M360 1010 Q500 760 640 1010" stroke="#ffd8f0" stroke-width="10" fill="none" opacity=".10"/>
+        <path d="M372 1012 Q500 784 628 1012" stroke="#d8f0ff" stroke-width="10" fill="none" opacity=".10"/>
+        <path d="M384 1014 Q500 808 616 1014" stroke="#e8ffd8" stroke-width="8" fill="none" opacity=".08"/>
+        <!-- de waterval -->
+        <path d="M438 548 Q500 538 566 548 L600 1500 L404 1500 Z" fill="url(#br-water)"/>
+        <g clip-path="url(#br-fall)" fill="none" stroke-linecap="round">
+          ${Array.from({ length: 14 }, (_, i) => { const x = 440 + i * 9.5 + (i % 3) * 2, w = 2 + (i % 4); const dash = 60 + (i % 4) * 25, gap = 90 + (i % 3) * 40;
+            return `<path class="fall-flow" style="--d:-${dash + gap}px;animation-delay:-${(i * 0.37).toFixed(2)}s;animation-duration:${(0.7 + (i % 5) * 0.12).toFixed(2)}s" d="M${x} 540 L${(x + (x - 502) * 0.18).toFixed(0)} 1500" stroke="#f4faff" stroke-width="${w}" stroke-opacity="${(0.35 + (i % 3) * 0.15).toFixed(2)}" stroke-dasharray="${dash} ${gap}"/>`; }).join('')}
+        </g>
+        <path d="M438 548 Q500 538 566 548 L600 1500 L404 1500 Z" fill="url(#br-water-side)"/>
+        <!-- schuimrand bovenaan -->
+        <path d="M430 552 Q452 532 476 550 Q500 530 526 550 Q550 532 574 552" stroke="#ffffff" stroke-width="10" fill="none" opacity=".85" stroke-linecap="round"/>
+        <ellipse cx="502" cy="548" rx="80" ry="14" fill="url(#br-spray)"/>
+        <!-- klif links -->
+        <path d="M0 620 Q120 600 250 630 Q330 650 360 700 Q390 820 370 960 Q350 1100 380 1500 L0 1500 Z" fill="url(#br-cliff-l)"/>
+        ${strata(0, 370, 680, 1480, 141, 1)}
+        <path d="M0 620 Q120 600 250 630 Q330 650 360 700 Q300 680 230 668 Q120 650 0 660 Z" fill="#4f7a4a" opacity=".85"/>
+        <path d="M360 700 Q390 820 370 960" stroke="#a8b4e0" stroke-width="4" fill="none" opacity=".25"/>
+        <!-- klif rechts -->
+        <path d="M1000 580 Q880 570 760 600 Q680 630 650 690 Q620 820 640 960 Q660 1100 630 1500 L1000 1500 Z" fill="url(#br-cliff-r)"/>
+        ${strata(640, 1000, 650, 1480, 151, -1)}
+        <path d="M1000 580 Q880 570 760 600 Q680 630 650 690 Q720 660 800 642 Q900 626 1000 632 Z" fill="#46703f" opacity=".8"/>
+        ${Art.pine(80, 650, 230, '#151330')}${Art.pine(190, 640, 180, '#151330')}${Art.pine(290, 660, 140, '#1a1838')}
+        ${Art.pine(900, 610, 260, '#151330')}${Art.pine(790, 620, 200, '#151330')}${Art.pine(710, 650, 130, '#1a1838')}
+        <!-- nevel in de kloof, onder de brug -->
+        <ellipse cx="500" cy="1250" rx="230" ry="110" fill="url(#br-spray)" class="glowpulse"/>
+        ${Art.mist(1180, 150, 0.95, 'drift', 33)}
+        <!-- de stenen boogbrug -->
+        <g>
+          <path d="M240 1080 Q500 900 770 1070 L770 1150 L710 1150 Q505 1010 300 1150 L240 1150 Z" fill="#6a6f86"/>
+          <path d="M240 1080 Q500 900 770 1070 L770 1150 L710 1150 Q505 1010 300 1150 L240 1150 Z" fill="url(#g-shade)"/>
+          ${vous}
+          <path d="M300 1150 Q505 1010 710 1150" stroke="#1a1a2a" stroke-width="5" fill="none"/>
+          <path d="M240 1080 Q500 900 770 1070" stroke="#a8aec4" stroke-width="7" fill="none"/>
+          ${wall}
+          <path d="M${deckX(0.02).toFixed(0)} ${(deckY(0.02) - 38).toFixed(0)} Q500 ${(900 - 38).toFixed(0)} ${deckX(0.98).toFixed(0)} ${(deckY(0.98) - 38).toFixed(0)}" stroke="#c8cee4" stroke-width="3" fill="none" opacity=".45"/>
+          <g fill="#5a8a4e" opacity=".9">${[0.12, 0.5, 0.86].map((t, k) => `<ellipse cx="${deckX(t).toFixed(0)}" cy="${(deckY(t) - 38).toFixed(0)}" rx="${[24, 30, 20][k]}" ry="7"/>`).join('')}</g>
+          ${ivy}
+          <!-- pijlers in de klif -->
+          <path d="M230 1150 L230 1240 L310 1240 L300 1150 Z M780 1150 L780 1230 L700 1230 L710 1150 Z" fill="#5a5f76" stroke="#2a2a3c" stroke-width="3"/>
+        </g>
+        <!-- grond aan deze kant -->
         <path d="M0 1120 Q300 1100 520 1150 L520 1500 L0 1500 Z" fill="#2a3040"/>
         <path d="M480 1150 Q700 1110 1000 1140 L1000 1500 L480 1500 Z" fill="#283040"/>
         <path d="M0 1150 L1000 1150 L1000 1500 L0 1500 Z" fill="#30364a"/>
+        <path d="M0 1150 L1000 1150 L1000 1500 L0 1500 Z" fill="url(#g-shade)" opacity=".6"/>
         ${Art.grass(1150, 1480, 90, 81, '#3a4a4a', 24)}
+        ${Art.flowers(1170, 1450, 18, 83, ['#cfe3ff', '#ffd1e8'])}
         <path d="M500 1150 L520 1500 M540 1160 L700 1500" stroke="#262a3c" stroke-width="4"/>
         <!-- bordje -->
-        <g transform="translate(140 1150)"><rect x="-6" y="-120" width="12" height="120" fill="#4a2f1c"/><rect x="-70" y="-160" width="140" height="56" rx="6" fill="#7a4e2c" transform="rotate(-5)"/><text x="0" y="-122" text-anchor="middle" font-size="26" font-family="Fraunces" font-weight="800" fill="#2a1a10" transform="rotate(-5)">TOL!</text></g>
+        <g transform="translate(140 1150)"><rect x="-6" y="-120" width="12" height="120" fill="#4a2f1c"/><rect x="-70" y="-160" width="140" height="56" rx="6" fill="#7a4e2c" transform="rotate(-5)"/><rect x="-70" y="-160" width="140" height="56" rx="6" fill="url(#g-shade)" transform="rotate(-5)"/><text x="0" y="-122" text-anchor="middle" font-size="26" font-family="Fraunces" font-weight="800" fill="#2a1a10" transform="rotate(-5)">TOL!</text></g>
       `;
     },
     props(G) {
@@ -695,7 +780,7 @@
           brood: async (G) => brokkelFeed(G),
           '*': async (G, it) => { await say('brokkel', 'Wat moet Brokkel daarmee? Brokkel eet geen ' + G.items[it].name.toLowerCase() + '. Brokkel eet… eigenlijk eet Brokkel al heel lang niks.'); },
         } },
-        { id: 'water', name: 'Waterval', x: 400, y: 620, w: 160, h: 300, walk: false, look: 'Het water valt heel diep naar beneden. Je hoort het pas na een tijdje plonzen. De nevel is hier zo dik als pap.' },
+        { id: 'water', name: 'Waterval', x: 420, y: 540, w: 170, h: 380, walk: false, look: 'Het water valt heel diep naar beneden. Je hoort het pas na een tijdje plonzen. In de nevel hangt een zwakke regenboog van maanlicht.' },
         { id: 'bord', name: 'Bordje', x: 70, y: 990, w: 140, h: 80, walk: [160, 1220], look: 'TOL! staat erop, in grote, scheve letters. Iemand heeft er een klein bloemetje naast getekend.' },
         { id: 'dorp', name: 'Terug naar het plein', exit: 'left', to: 'dorp', x: 0, y: 1180, w: 100, h: 220, walk: [60, 1300] },
       ];

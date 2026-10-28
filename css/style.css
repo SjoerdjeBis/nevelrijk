@@ -239,8 +239,16 @@ input { font: inherit; user-select: text; -webkit-user-select: text; }
 .card-text .stat b { display: block; font-size: 1.3em; color: var(--amber); }
 
 /* ---------- puzzels ---------- */
-.puzzle-sheet { text-align: center; }
-.pz-canvas { width: 100%; max-width: 380px; margin: 6px auto; display: block; touch-action: none; }
+/* Puzzelvenster: kop en knoppen blijven altijd zichtbaar, de inhoud scrolt als het scherm te klein is. */
+.puzzle-sheet { text-align: center; position: relative; display: flex; flex-direction: column; max-height: calc(100dvh - 6px); padding-top: 14px; }
+.puzzle-sheet h2 { font-size: 1.45em; padding: 0 44px; margin-bottom: 2px; }
+.puzzle-sheet #pz-sub { margin: 0 0 6px; font-size: .92em; }
+#pz-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 2px 2px 6px; }
+.puzzle-sheet > .row { flex: none; padding-top: 8px; border-top: 1px solid var(--line); }
+.puzzle-sheet > .row .btn { margin: 0; }
+.sheet-x { position: absolute; top: 10px; right: 10px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255,255,255,.08); color: var(--ink); font-size: 18px; cursor: pointer; z-index: 2; }
+.sheet-x:active { transform: scale(.94); }
+.pz-canvas { width: 100%; max-width: min(380px, 46dvh); margin: 6px auto; display: block; touch-action: none; }
 .stones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 360px; margin: 10px auto; }
 .stone-btn { aspect-ratio: 1; border-radius: 46% 54% 42% 58% / 55% 45% 55% 45%; border: 0; cursor: pointer; position: relative; font-size: 34px; color: rgba(255,255,255,.85); text-shadow: 0 0 10px currentColor; background: radial-gradient(circle at 40% 30%, #8d97a8, #444b5a 70%); box-shadow: inset 0 -8px 16px rgba(0,0,0,.4), 0 6px 14px rgba(0,0,0,.4); transition: transform .1s, box-shadow .2s, filter .2s; }
 .stone-btn span { display: block; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-shadow: none; color: #e8e6f2; margin-top: -4px; }
@@ -256,14 +264,15 @@ input { font: inherit; user-select: text; -webkit-user-select: text; }
 .answers .btn.wrong { animation: shake .4s; border-color: #ff8080; }
 @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 .cauldron-wrap { position: relative; max-width: 360px; margin: 0 auto; }
+.cauldron-wrap svg { max-height: 15dvh; }
 .ingredients { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
-.ingr { padding: 6px 4px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.05); cursor: pointer; min-height: 82px; }
-.ingr svg { width: 44px; height: 44px; display: block; margin: 0 auto 2px; }
+.ingr { padding: 5px 4px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.05); cursor: pointer; min-height: 66px; color: var(--ink); }
+.ingr svg { width: 36px; height: 36px; display: block; margin: 0 auto 2px; }
 .ingr small { font-size: .78em; display: block; line-height: 1.15; }
-.recipe { text-align: left; background: var(--parch); color: var(--parch-ink); border-radius: 12px; padding: 10px 14px; font-family: var(--font-title); font-size: .98em; margin: 6px 0; }
+.recipe { text-align: left; background: var(--parch); color: var(--parch-ink); border-radius: 12px; padding: 8px 12px; font-family: var(--font-title); font-size: .92em; margin: 4px 0; }
 .recipe ol { margin: 4px 0; padding-left: 20px; }
 .stir-row { display: flex; gap: 8px; }
-.stir-row .btn { margin: 0; }
+.stir-row .btn { margin: 0; flex: 1; min-height: 44px; padding: 8px 6px; font-size: .92em; }
 .brew-log { min-height: 1.4em; font-size: .9em; color: var(--ink-dim); }
 
 /* ---------- toegankelijkheid / beweging ---------- */
@@ -319,14 +328,17 @@ input { font: inherit; user-select: text; -webkit-user-select: text; }
 .actor.reach .arm-r { transform: rotate(-70deg); transition: transform .2s; }
 
 /* ---------- puzzels: vogeltje en spiegels ---------- */
-.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: min(100%, 330px); margin: .4em auto; padding: 6px; border-radius: 14px; background: #0c1226; }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: min(100%, 330px, 44dvh); margin: .4em auto; padding: 6px; border-radius: 14px; background: #0c1226; }
 .tile { aspect-ratio: 1; padding: 0; border: 2px solid rgba(160, 200, 255, .25); border-radius: 8px; background: #16223e; overflow: hidden; cursor: pointer; min-height: 44px; }
 .tile svg { width: 100%; height: 100%; display: block; transition: transform .25s cubic-bezier(.3, 1.3, .5, 1); }
 .tile.ok { border-color: rgba(255, 220, 140, .55); }
 .tiles.done { gap: 0; transition: gap .4s; }
 .tiles.done .tile { border-color: transparent; border-radius: 0; }
-.tile-preview { width: 110px; height: 110px; border-radius: 10px; display: block; margin: 0 auto .4em; opacity: .85; }
-.mirror-grid { width: min(100%, 420px); display: block; margin: 0 auto; }
+.tile-preview { width: min(110px, 13dvh); height: min(110px, 13dvh); border-radius: 10px; display: block; margin: 0 auto .4em; opacity: .85; }
+.mirror-grid { width: min(100%, 420px, 52dvh); display: block; margin: 0 auto; }
 .mirror-grid .mirror { cursor: pointer; }
 .mirror-grid .mirror:focus-visible rect:first-child { stroke: #ffd36e; stroke-width: 3; }
 .reduce-motion .tile svg, .reduce-motion .mirror-grid .mirror g { transition: none !important; }
+/* stromend water van de waterval */
+.fall-flow { animation: fallflow 1.2s linear infinite; }
+@keyframes fallflow { to { stroke-dashoffset: var(--d, -180px); } }

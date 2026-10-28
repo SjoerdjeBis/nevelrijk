@@ -18,13 +18,17 @@
     ov.hidden = false;
     let closeR;
     const closed = new Promise((r) => { closeR = r; });
-    const close = $('#pz-close'), hint = $('#pz-hint');
+    const close = $('#pz-close'), hint = $('#pz-hint'), x = $('#pz-x');
     const onClose = () => { A.sfx('tap'); finish(false); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } };
+    x.addEventListener('click', onClose); document.addEventListener('keydown', onKey);
+    body.scrollTop = 0;
     const onHint = () => { A.sfx('crow'); const t = hintFn(); $('#pz-sub').innerHTML = '🪶 <b>Kwast:</b> ' + t; A.speak('kwast', t); };
     close.addEventListener('click', onClose); hint.addEventListener('click', onHint);
     hint.style.display = hintFn ? '' : 'none';
     function finish(ok) {
       close.removeEventListener('click', onClose); hint.removeEventListener('click', onHint);
+      x.removeEventListener('click', onClose); document.removeEventListener('keydown', onKey);
       A.stopSpeech();
       setTimeout(() => { ov.hidden = true; closeR(ok); }, ok ? 900 : 0);
     }
@@ -179,7 +183,7 @@
       </svg></div>
       <div class="brew-log" id="brew-log" aria-live="polite">De ketel pruttelt zachtjes.</div>
       <div class="ingredients">${INGR.map((i) => `<button class="ingr" data-id="${i.id}"><svg viewBox="0 0 64 64">${i.svg}</svg><small>${i.name}</small></button>`).join('')}</div>
-      <div class="stir-row"><button class="btn" data-stir="ccw">⟲ Tegen de klok</button><button class="btn" data-stir="cw">⟳ Met de klok</button></div>`;
+      <div class="stir-row"><button class="btn" data-stir="ccw">⟲ Tegen de klok in</button><button class="btn" data-stir="cw">⟳ Met de klok mee</button></div>`;
     const liquid = pz.body.querySelector('#brew-liquid'), log = pz.body.querySelector('#brew-log'), swirl = pz.body.querySelector('#brew-swirl');
     let step = 0; const colors = ['#3d4a3a', '#4a5ac8', '#8a9ad8', '#8a9ad8', '#9aa8e8', '#b0c0ff', '#e8f0ff'];
     function act(id, label) {
