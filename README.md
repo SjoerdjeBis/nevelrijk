@@ -4,6 +4,7 @@ Een point-and-click avontuur in de geest van de oude Kyrandia-games, gebouwd voo
 
 ## Spelen
 
+- **Online (openbaar, zonder account):** https://sjoerdjebis.github.io/nevelrijk/
 - **Online (privé):** https://claude.ai/artifact/Uu6St59aH49RTnaDSAzK9T
 - **Lokaal:** `node server.js` en open dan http://localhost:8765
 - **Op je telefoon thuis:** start `node server.js` en open `http://<ip-van-je-mac>:8765` op de telefoon (zelfde wifi). Via "Zet op beginscherm" wordt het een app.
