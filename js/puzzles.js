@@ -44,7 +44,7 @@
       : 'Vijf stenen, één lied. Ze zwijgen, tot iemand hun het oude slaapliedje teruggeeft.',
     /* stem:kwast */ () => {
       hintN++;
-      if (!G.has('muziekdoos')) return 'Oma\'s muziekdoosje speelt dat liedje. Zat dat niet in haar kist?';
+      if (!G.has('muziekdoos') && !G.flag('boxGiven')) return 'Oma\'s muziekdoosje speelt dat liedje. Zat dat niet in haar kist?';
       if (G.easy || hintN > 1) return 'Druk op Luister. De stenen lichten op in de volgorde van het lied. Doe ze daarna na!';
       return 'Luister goed. Hoe hoger de toon, hoe verder naar rechts de steen staat.';
     });
@@ -55,7 +55,7 @@
       ${showLid ? `<div class="notation" aria-label="Tekens op het deksel van het muziekdoosje">${lid.map(sym).join(' ')}${!G.easy ? ' <span class="muted small" style="align-self:center">…rest weggesleten</span>' : ''}</div>` : ''}
       <canvas class="pz-canvas" id="pz-wave" width="760" height="120" aria-hidden="true" style="height:60px"></canvas>
       <div class="stones" role="group" aria-label="Stenen">${A.STONES.map((s) => `<button class="stone-btn" data-id="${s.id}" style="--glow:${s.color};color:${s.color}" aria-label="Steen ${s.name}">${s.sym}<span>${s.name.toUpperCase()}</span></button>`).join('')}
-      <button class="btn" id="pz-listen" style="margin:0;border-radius:24px" ${G.has('muziekdoos') ? '' : 'disabled'}>🎵<br><small>Luister</small></button></div>
+      <button class="btn" id="pz-listen" style="margin:0;border-radius:24px" ${G.has('muziekdoos') || G.flag('boxGiven') ? '' : 'disabled'}>🎵<br><small>${!G.has('muziekdoos') && G.flag('boxGiven') ? 'Neurie' : 'Luister'}</small></button></div>
       <div class="seq-dots" id="pz-dots">${target.map(() => '<i></i>').join('')}</div>`;
     const wave = pz.body.querySelector('#pz-wave'); const wctx = wave.getContext('2d');
     let bars = [];
@@ -168,10 +168,10 @@
     const target = ['klokje', 'maanmos', 'cw', 'cw', 'cw', 'vuurbloem'];
     const recipe = G.easy
       ? `<b>Nevelzicht</b><ol><li>Eén blauw klokje</li><li>Een plukje maanmos</li><li>Roer 3× met de klok mee ⟳</li><li>Eén traan van de vuurbloem</li></ol>`
-      : `<b>Nevelzicht</b> <i>(in Sabeths kriebelhandschrift)</i><ol><li>Eerst iets dat luistert, maar geen oren heeft.</li><li>Dan iets dat slaapt in het maanlicht.</li><li>Roer zoals de schaduw van een zonnewijzer draait. Zo vaak als een klaver blaadjes heeft.</li><li>Als laatste iets dat brandt, maar nooit opbrandt.</li></ol>`;
+      : `<b>Nevelzicht</b> <i>(in Sabeths kriebelhandschrift)</i><ol><li>Eerst iets dat eruitziet als een bel, maar nooit klinkt.</li><li>Dan iets dat slaapt in het maanlicht.</li><li>Roer zoals de schaduw van een zonnewijzer draait. Zo vaak als een klaver blaadjes heeft.</li><li>Als laatste iets dat brandt, maar nooit opbrandt.</li></ol>`;
     const pz = open('Sabeths Ketel', 'Maak het drankje waarmee je door de nevel kunt kijken.', /* stem:kwast */ () =>
       G.easy ? 'Volg het recept precies. Eerst het klokje, dan het maanmos. Dan drie keer met de klok mee roeren. En als laatste de vuurbloem.'
-        : 'Een blauw klokje lijkt een beetje op een oortje. De schaduw van een zonnewijzer draait met de klok mee. En een klaver heeft drie blaadjes.');
+        : 'Een klokje is een bloem die eruitziet als een belletje. De schaduw van een zonnewijzer draait met de klok mee. En een klaver heeft drie blaadjes.');
     pz.body.innerHTML = `<div class="recipe">${recipe}</div>
       <div class="cauldron-wrap"><svg viewBox="0 0 300 170" style="width:100%;max-width:300px" aria-hidden="true">
         <ellipse cx="150" cy="160" rx="110" ry="10" fill="#000" opacity=".4"/>
@@ -210,7 +210,8 @@
   P.glass = function (G) {
     const pz = open('Het Maanglas blazen', 'Houd het glas in het vuur tot het oranje gloeit. Blaas dan. Maar niet te hard!', /* stem:kwast */ () =>
       'Eerst warm maken. Houd de knop ingedrukt tot het witte streepje in het gouden vak staat. Laat dan los. Blaas daarna tot de bol tussen de twee ringen zit, en laat weer los!');
-    const zone = G.easy ? 0.16 : 0.09;
+    // Breedte van het goede vak. Moeilijk is krapper, maar nog haalbaar voor een kind (~0,45 s om los te laten).
+    const zone = G.easy ? 0.16 : 0.11;
     pz.body.innerHTML = `<canvas class="pz-canvas" id="gl-c" width="600" height="420" style="aspect-ratio:600/420"></canvas>
       <div class="brew-log" id="gl-log" aria-live="polite">Stap 1: verwarm het sterrenzand.</div>
       <button class="btn btn-primary" id="gl-btn" style="touch-action:none">🔥 Houd vast om te verwarmen</button>`;
@@ -238,7 +239,7 @@
       if (holding && phase === 'heat') heat = Math.min(1, heat + 0.0055);
       else if (phase === 'heat') heat = Math.max(0, heat - 0.002);
       if (holding && phase === 'blow') {
-        size += 0.004 + (G.easy ? 0 : 0.0015);
+        size += 0.004;
         if (size > sizeTarget[1] + 0.04) { A.sfx('glass'); log.textContent = 'Pling! Te hard geblazen. De bol knapt. Maak het glas opnieuw warm.'; phase = 'heat'; heat = 0.3; size = 0.15; holding = false; btn.textContent = '🔥 Houd vast om te verwarmen'; }
       }
       x.clearRect(0, 0, 600, 420);

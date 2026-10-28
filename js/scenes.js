@@ -576,7 +576,7 @@
             G.state.seen.stonesIntro = true;
             await M('Vijf oude stenen in een halve kring. Er staan tekens op: een maan, een ster, een blad, een golf en een vlam.');
             await say('stenen', '<em>Wie… wekt ons? Wij zingen alleen het lied dat wij kennen. Het lied van Brem.</em>');
-            if (!G.has('muziekdoos')) { await M('Het lied van Oma… haar slaapliedje? Dat zit in haar muziekdoosje. Maar dat ligt nog thuis.'); return; }
+            if (!G.has('muziekdoos') && !f('boxGiven')) { await M('Het lied van Oma… haar slaapliedje? Dat zit in haar muziekdoosje. Maar dat ligt nog thuis.'); return; }
           }
           const ok = await P.stones(G);
           if (ok) {
@@ -615,16 +615,8 @@
           }
           await M('Die doorns prikken te erg. Ik heb iets nodig om de takken weg te trekken. Iets kroms, van ijzer.');
         }, use: {
-          haak: async (G) => {
-            await M('Stilzitten… ik trek de takken weg met de haak… voorzichtig…'); A.sfx('whoosh');
-            G.set('sluipFree'); G.kind(1); G.choice('vosvrij', 'Je bevrijdde Sluip, de nevelvos, uit de braamstruik.'); G.refresh();
-            await say('sluip', 'Vrij! Mijn staart! Ik ben Sluip. Ik ben gemaakt van nevel, maar ik ben geen nevel. Snap je?');
-            await M('Een beetje?');
-            await say('sluip', 'Dit vergeet ik nooit, Mira. Vossen onthouden altijd wie hen hielp. Ga je naar de toren? Dan zie je me daar.');
-            A.sfx('whoosh');
-            await K('…Hij heeft mij niet eens opgegeten. Ik ben bijna beledigd.');
-          },
-          werphaak: async (G) => { await M('Met de losse haak gaat dat beter.'); },
+          haak: async (G) => freeSluip(G),
+          werphaak: async (G) => freeSluip(G),
         } },
         { id: 'terug', name: 'Terug naar het plein', exit: 'down', to: 'dorp', x: 380, y: 1400, w: 240, h: 100, walk: [500, 1420] },
       ];
@@ -638,6 +630,17 @@
       }
     },
   });
+
+
+  async function freeSluip(G) {
+    await M('Stilzitten… ik trek de takken weg met de haak… voorzichtig…'); A.sfx('whoosh');
+    G.set('sluipFree'); G.kind(1); G.choice('vosvrij', 'Je bevrijdde Sluip, de nevelvos, uit de braamstruik.'); G.refresh();
+    await say('sluip', 'Vrij! Mijn staart! Ik ben Sluip. Ik ben gemaakt van nevel, maar ik ben geen nevel. Snap je?');
+    await M('Een beetje?');
+    await say('sluip', 'Dit vergeet ik nooit, Mira. Vossen onthouden altijd wie hen hielp. Ga je naar de toren? Dan zie je me daar.');
+    A.sfx('whoosh');
+    await K('…Hij heeft mij niet eens opgegeten. Ik ben bijna beledigd.');
+  }
 
   /* ==========================================================
      4. DE BRUG VAN BROKKEL
@@ -1184,7 +1187,7 @@
     if (r === 'memory' || r === 'portret') {
       await teunMemory(G, r === 'portret');
     } else if (r === 'box') {
-      G.take('muziekdoos'); G.kind(1); G.choice('veer', 'Je gaf Teun Oma\'s muziekdoosje als veergeld.');
+      G.take('muziekdoos'); G.set('boxGiven'); G.set('heardSong'); G.kind(1); G.choice('veer', 'Je gaf Teun Oma\'s muziekdoosje als veergeld.');
       A.sfx('musicbox', A.LULLABY.easy);
       await say('teun', 'Ach… dit liedje. Brem zong het altijd op de boot, toen we klein waren. Dank je, kind. Dit vergeet ik niet. Ik laat het elke avond spelen.');
       G.addVoice('teun');
@@ -1913,9 +1916,9 @@
         'De Maanlantaarn brandt weer. Maar dit licht is anders. Het is zilver en warm, en het eet niets op. Het brandt op het lied dat het hele dal samen zingt.',
         'De nevel trekt weg. Iedereen in het dal krijgt zijn herinneringen terug. Hanna weet weer hoe de appeltaart van haar oma smaakte. En Sabeth ziet het gezicht van haar moeder weer, als ze haar ogen dichtdoet.',
         named ? 'Waar de Grijze Heer stond, staat nu een oude man met tranen op zijn wangen. Oma Brem houdt hem vast en laat niet meer los. Aldo is thuis, na zestig jaar.' : 'Waar de Grijze Heer stond, blijft een zacht, zilveren lichtje over. Het past op het dal, en het lijkt niet meer zo alleen. Wie hij was, weet niemand. Misschien kom je daar nog eens achter…',
-        f('heerBird') ? 'In zijn hand houdt hij een blauw glazen vogeltje. Hij laat het nooit meer los.' : '',
+        f('heerBird') ? 'In zijn handen glinstert het blauwe glazen vogeltje van vroeger.' : '',
         v.includes('isolde') ? 'En in het glas van de lantaarn glimlacht heel even een vrouw met een kroon van vlechten. Dan is ze weg. Nu kan ze rusten.' : '',
-        'Elke avond, als de zon ondergaat, zingt het dal. Een trol als een snurkende berg. Een veerman met zijn roeiliedje. Een kraai die vals meedoet. En een glasblazer die nu weet hoe sterk haar glas is.',
+        'Elke avond, als de zon ondergaat, zingt het dal samen. Iedereen die meezong, zingt weer mee. Zelfs een kraai die vals meedoet. En een glasblazer die nu weet hoe sterk haar glas is.',
         stats, choicesHtml,
       ].filter(Boolean);
     } else if (kind === 'oud') {
