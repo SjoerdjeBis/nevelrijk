@@ -46,6 +46,28 @@ function loadEnv() {
 
 /* ---------------- een kleine JS-tokenizer ----------------
    Genoeg om strings, commentaar, regexen en haakjes te herkennen. */
+// Geeft de index direct na een string terug. Template-strings mogen ${…} bevatten,
+// met daarin weer accolades, strings en template-strings.
+function skipString(src, i) {
+  const q = src[i]; let j = i + 1;
+  while (j < src.length) {
+    const ch = src[j];
+    if (ch === '\\') { j += 2; continue; }
+    if (ch === q) return j + 1;
+    if (q === '`' && ch === '$' && src[j + 1] === '{') {
+      j += 2; let depth = 1;
+      while (j < src.length && depth) {
+        const d = src[j];
+        if (d === '\'' || d === '"' || d === '`') { j = skipString(src, j); continue; }
+        if (d === '{') depth++; else if (d === '}') depth--;
+        j++;
+      }
+      continue;
+    }
+    j++;
+  }
+  return j;
+}
 function tokenize(src) {
   const toks = []; let i = 0;
   const sig = () => { for (let k = toks.length - 1; k >= 0; k--) if (toks[k].t !== 'comment') return toks[k]; return null; };
@@ -55,15 +77,8 @@ function tokenize(src) {
     if (c === '/' && src[i + 1] === '/') { const e = src.indexOf('\n', i); const end = e < 0 ? src.length : e; toks.push({ t: 'comment', v: src.slice(i, end) }); i = end; continue; }
     if (c === '/' && src[i + 1] === '*') { const e = src.indexOf('*/', i + 2) + 2; toks.push({ t: 'comment', v: src.slice(i, e) }); i = e; continue; }
     if (c === '\'' || c === '"' || c === '`') {
-      let j = i + 1, expr = false, depth = 0;
-      while (j < src.length) {
-        if (src[j] === '\\') { j += 2; continue; }
-        if (c === '`' && src[j] === '$' && src[j + 1] === '{') { expr = true; depth++; j += 2; continue; }
-        if (c === '`' && depth && src[j] === '}') { depth--; j++; continue; }
-        if (!depth && src[j] === c) break;
-        j++;
-      }
-      toks.push({ t: 'str', raw: src.slice(i, j + 1), expr }); i = j + 1; continue;
+      const end = skipString(src, i);
+      toks.push({ t: 'str', raw: src.slice(i, end), expr: c === '`' && /\$\{/.test(src.slice(i, end)) }); i = end; continue;
     }
     if (c === '/') { // regex of deling?
       const p = sig();
@@ -111,10 +126,12 @@ function literals(toks, expr) {
   const res = [];
   for (const { tok, idx } of expr) {
     if (tok.t !== 'str' || tok.expr) continue;
-    const prev = toks[idx - 1], next = toks[idx + 1];
+    // buren overslaan die alleen een /* stem:… */-opmerking zijn
+    let pi = idx - 1; while (pi >= 0 && toks[pi].t === 'comment') pi--;
+    const prev = toks[pi], next = toks[idx + 1];
     if ((prev && prev.v === '+') || (next && next.v === '+')) continue; // stukje van een samengestelde zin
     if (next && (next.v === ':' && prev && prev.v !== '?')) continue; // sleutel in een object
-    if (prev && prev.t === 'punc' && prev.v === '=' && toks[idx - 2] && toks[idx - 2].v === '=') continue; // vergelijking
+    if (prev && prev.t === 'punc' && prev.v === '=' && toks[pi - 1] && toks[pi - 1].v === '=') continue; // vergelijking
     if (next && next.t === 'punc' && next.v === '=' ) continue;
     if (prev && prev.t === 'punc' && prev.v === '[' && next && next.v === ']') continue; // obj['x']
     let s; try { s = Function('"use strict";return ' + tok.raw)(); } catch (e) { continue; }
@@ -148,7 +165,7 @@ function extract() {
       }
       if (!n || n.v !== '(') continue;
       const prev = toks[i - 1];
-      if ((t.v === 'M' || t.v === 'K') && !(prev && prev.v === '.')) {
+      if ((t.v === 'M' || t.v === 'K' || t.v === 'KW') && !(prev && prev.v === '.')) { // M = Mira, K/KW = Kwast
         const a = argsAt(toks, i + 1);
         if (a[0]) literals(toks, a[0]).forEach((s) => add(t.v === 'M' ? 'mira' : 'kwast', s, file));
       } else if (t.v === 'say' || t.v === 'speak') {

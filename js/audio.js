@@ -534,7 +534,11 @@
     if (!A.voiceOn || !text) return Promise.resolve();
     A.stopSpeech();
     const k = window.VoiceKey ? window.VoiceKey.key(speaker, text) : null;
-    if (k && hasRecording(k)) { prefetchAfter(k); return playRecording(speaker, k).then((ok) => (ok ? undefined : speakDevice(speaker, text))); }
+    // Zijn er opnames, dan nooit terugvallen op de toestelstem: liever even geen stem dan een andere stem.
+    const recorded = A.recordedCount() > 0;
+    const quiet = () => new Promise((r) => setTimeout(r, 800 + (window.VoiceKey ? window.VoiceKey.clean(text).length : 60) * 55));
+    if (k && hasRecording(k)) { prefetchAfter(k); return playRecording(speaker, k).then((ok) => (ok ? undefined : recorded ? quiet() : speakDevice(speaker, text))); }
+    if (recorded) { if (window.console) console.warn('Geen opname voor', speaker, k, text); return quiet(); }
     return speakDevice(speaker, text);
   };
 

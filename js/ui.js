@@ -88,7 +88,7 @@
       <div class="setting"><label>Geluidseffecten</label><input type="range" min="0" max="1" step="0.05" value="${s.sfx}" data-range="sfx" aria-label="Volume effecten"></div>
       <div class="setting"><label>Gesproken tekst<small>Elk personage heeft een eigen stem</small></label>${tog('voice')}</div>
       <div class="setting"><label>Spreeksnelheid</label><input type="range" min="0.6" max="1.6" step="0.05" value="${s.voiceRate}" data-range="voiceRate" aria-label="Spreeksnelheid"></div>
-      <div class="setting"><label>Stem van Mira</label>${voices}</div>
+      ${A.recordedCount() ? '' : `<div class="setting"><label>Stem van Mira</label>${voices}</div>`}
       <div class="setting"><label></label><button class="btn btn-small" id="test-voice">🔊 Test stem</button></div>
       <div class="setting"><label>Tekstgrootte</label>${seg('textSize', [['m', 'A'], ['l', 'A+'], ['xl', 'A++']])}</div>
       <div class="setting"><label>Tekstsnelheid</label>${seg('textSpeed', [['langzaam', 'Traag'], ['normaal', 'Normaal'], ['direct', 'Direct']])}</div>

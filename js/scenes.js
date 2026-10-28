@@ -809,7 +809,7 @@
       const list = [
         { id: 'brokkel', name: 'Brokkel de trol', x: bx[0], y: bx[1], w: bx[2], h: bx[3], walk: f('bridgePassed') ? [700, 1220] : [470, 1260], tap: (G) => brokkelTalk(G), use: {
           brood: async (G) => brokkelFeed(G),
-          '*': async (G, it) => { await say('brokkel', 'Wat moet Brokkel daarmee? Brokkel eet geen ' + G.items[it].name.toLowerCase() + '. Brokkel eet… eigenlijk eet Brokkel al heel lang niks.'); },
+          '*': async (G, it) => { await say('brokkel', 'Wat moet Brokkel daarmee? Dat kan Brokkel niet eten. Brokkel eet… eigenlijk eet Brokkel al heel lang niks.'); },
         } },
         { id: 'water', name: 'Waterval', x: 420, y: 540, w: 170, h: 380, walk: false, look: 'Het water valt heel diep naar beneden. Je hoort het pas na een tijdje plonzen. In de nevel hangt een zwakke regenboog van maanlicht.' },
         { id: 'bord', name: 'Bordje', x: 70, y: 990, w: 140, h: 80, walk: [160, 1220], look: 'TOL! staat erop, in grote, scheve letters. Iemand heeft er een klein bloemetje naast getekend.' },
@@ -963,7 +963,7 @@
           medaillon: async (G) => sabethMedaillon(G),
           nevelzicht: async (G) => { await say('sabeth', 'Bewaar dat maar voor iemand die het nodig heeft, kind. Ik kan al door de nevel kijken.'); },
           portret: async (G) => { await say('sabeth', 'Brem en… waar een jongen hoort te staan, zie ik een vlek. Dat heeft de nevel gedaan. Iemand is hier helemaal vergeten.'); G.set('sabethSawPortrait'); },
-          '*': async (G, it) => { await say('sabeth', 'Hm. Een ' + G.items[it].name.toLowerCase() + '. Leuk. Nee, dank je.'); },
+          '*': async (G, it) => { await say('sabeth', 'Hm. Leuk. Nee, dank je. Dat heb ik niet nodig.'); },
         } },
         { id: 'ketel', name: 'Sabeths ketel', x: 130, y: 1100, w: 200, h: 160, walk: [330, 1270], tap: async (G) => {
           if (!f('sabethMet')) { await M('Een borrelende ketel. Hij ruikt naar munt en onweer. Ik vraag eerst of ik hem mag gebruiken.'); return; }
@@ -1128,7 +1128,7 @@
           nevelzicht: async (G) => teunPotion(G),
           muziekdoos: async (G) => { if (!f('teunCanSee')) { await say('teun', 'Mooi deuntje. Maar ik zie nog steeds geen hand voor ogen.'); return; } await teunPay(G, 'box'); },
           portret: async (G) => { if (!f('teunCanSee')) { await say('teun', 'Ik zie niks, kind. Alles is grijs.'); return; } await teunPay(G, 'portret'); },
-          '*': async (G, it) => { await say('teun', 'Wat moet een oude veerman met een ' + G.items[it].name.toLowerCase() + '? Ik wil een herinnering, geen rommel.'); },
+          '*': async (G, it) => { await say('teun', 'Wat moet een oude veerman daarmee? Ik wil een herinnering, geen rommel.'); },
         } },
         { id: 'zand', name: 'Glinsterend zand', hidden: G.has('sterrenzand') || f('sandTaken'), x: 40, y: 1260, w: 220, h: 160, walk: [230, 1340], tap: async (G) => {
           await G.reach(); G.set('sandTaken'); G.give('sterrenzand');
@@ -1331,7 +1331,7 @@
         { id: 'wieke', name: 'Wieke de Mot', x: 380, y: 900, w: 190, h: 320, walk: [400, 1290], tap: (G) => wiekeTalk(G), use: {
           bladzijde: async (G) => wiekePage(G),
           vogeltje: async (G) => { await say('wieke', 'Wat glimt hij mooi, hè? Hou hem goed vast. Hij hoort bij iemand.'); },
-          '*': async (G, it) => { await say('wieke', 'Een ' + G.items[it].name.toLowerCase() + '? Die is nog niet vergeten. Bewaar hem maar goed.'); },
+          '*': async (G, it) => { await say('wieke', 'Dat is nog niet vergeten. Bewaar het maar goed.'); },
         } },
         { id: 'register', name: 'Het Grote Register', x: 570, y: 980, w: 180, h: 170, walk: [620, 1240], tap: (G) => readRegister(G) },
         { id: 'kist', name: 'Kist met scherven', hidden: f('birdDone'), x: 170, y: 1210, w: 150, h: 110, walk: [330, 1320], tap: (G) => birdCrate(G) },
@@ -1881,7 +1881,7 @@
         A.sfx('glass');
         await M('Ik zet het Maanglas in de kooi en zing… <em>slaap, kleine vonk, de nacht is lang…</em>');
         await say('grijs', v ? 'Hoor je dat? Een paar stemmetjes. Zo dun als een draadje. Daar brandt geen lantaarn op.' : 'Hoor je dat? Eén stemmetje. Zo dun als een draadje. Daar brandt geen lantaarn op.');
-        await K(`Je hebt meer stemmen nodig, Mira. ${v} is niet genoeg. Wie in het dal zou met je mee willen zingen?`);
+        await K('Je hebt meer stemmen nodig, Mira. Dit is nog niet genoeg. Wie in het dal zou met je mee willen zingen?');
         G.set('maanglasPlaced', false); G.give('maanglas', true); G.refresh();
         await M('Ik moet terug. Ik heb meer mensen nodig die met me mee willen zingen.');
         return;
